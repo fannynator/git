@@ -120,17 +120,10 @@ export async function closeLesson() {
     clearLessonProgress();
     $('#lessonOverlay').classList.remove('active');
     
-    const skill = getCurrentSkills().find(s => s.id === state.lessonSkillId);
-    if (skill && state.lessonCorrect > 0) {
-        const totalTasks = state.lessonTasks.filter(t => !t.isBonus).length || 8;
-        const ratio = state.lessonCorrect / totalTasks;
-        const np = Math.min(100, skill.progress + Math.round(ratio * 100));
-        skill.progress = np;
-        if (np >= SKILL.PROGRESS_TO_COMPLETE) {
-            skill.status = 'completed';
-            unlockNext(skill);
-        }
-    }
+    // ВАЖНО: при закрытии урока НЕ начисляем прогресс навыку!
+    // Прогресс начисляется только в finishLesson() при полном прохождении.
+    // Сохраняем только ловушки, которые уже созданы.
+    
     state.currentLesson = null;
     state.lessonTasks = [];
     renderSkillTree();
