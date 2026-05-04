@@ -72,7 +72,55 @@ function clearLessonProgress() {
 }
 
 export function startLesson(skillId) {
+    // Проверяем, есть ли сохранённый прогресс для этого навыка
+    const saved = localStorage.getItem(LESSON_STORAGE_KEY);
+    if (saved) {
+        try {
+            const progress = JSON.parse(saved);
+            if (progress.skillId === skillId && progress.tasks && progress.tasks.length > 0) {
+                // Есть сохранение — предлагаем продолжить
+                const skill = getCurrentSkills().find(s => s.id === skillId);
+                const skillName = skill ? skill.name : 'Неизвестно';
+                const resume = confirm(
+                    `🐱 У тебя есть незавершённый урок!\n\n` +
+                    `📚 Тема: «${skillName}»\n` +
+                    `📍 Пройдено: ${progress.step} из ${progress.tasks.length} заданий\n` +
+                    `✅ Верных ответов: ${progress.correct}\n\n` +
+                    `Продолжить урок?`
+                );
+                
+                if (resume) {
+                    // Загружаем сохранение и продолжаем
+                    if (loadLessonProgress()) {
+                        const im = state.subject === 'math';
+                        $('#lessonTitle').textContent = (im ? '🧮 ' : '📝 ') + skillName;
+                        $('#lessonContainer').className = 'lesson-container ' + (im ? 'math-lesson' : 'rus-lesson');
+                        $('#lessonHeader').className = 'lesson-header ' + (im ? 'math-bar' : 'rus-bar');
+                        $('#lessonNextBtn').className = 'lesson-next ' + (im ? 'math-next' : 'rus-next');
+                        $('#btnLessonFinish').className = 'btn-lesson-finish ' + (im ? 'math-finish' : 'rus-finish');
+                        
+                        refreshDots();
+                        updateDots();
+                        $('#lessonOverlay').classList.add('active');
+                        $('#lessonNextBtn').classList.remove('show');
+                        $('#lessonFinishBlock').classList.remove('show');
+                        $('#lessonScene').style.display = 'flex';
+                        renderLessonStep();
+                        return; // Выходим — не создаём новый урок
+                    }
+                } else {
+                    // Отказался — удаляем и начинаем новый
+                    clearLessonProgress();
+                }
+            }
+        } catch (e) {
+            clearLessonProgress();
+        }
+    }
+    
+    // Если сохранения нет или отказался — начинаем новый урок
     const im = state.subject === 'math';
+    
     state.currentLesson = skillId;
     state.lessonSkillId = skillId;
     state.lessonStep = 0;
@@ -96,7 +144,6 @@ export function startLesson(skillId) {
     $('#lessonFinishBlock').classList.remove('show');
     $('#lessonScene').style.display = 'flex';
     
-    // Сохраняем начальный прогресс
     saveLessonProgress();
     renderLessonStep();
 }
