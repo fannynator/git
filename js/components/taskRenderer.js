@@ -74,11 +74,13 @@ function renderChoice(container, task, explEl, resolve, isBonus, compact) {
             console.log('[choice] Выбрано:', chosenValue, 'Правильное:', correctAnswer, 'Верно?', isCorrect);
             
             if (isCorrect) {
+                 playSound('correct');
                 btn.classList.add('correct-pick');
                 explEl.textContent = '✅ ' + task.explanation;
                 explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show good';
                 resolve({ isCorrect: true, isBonus });
             } else {
+                playSound('wrong');
                 btn.classList.add('wrong-pick');
                 // Подсвечиваем правильную кнопку (по значению)
                 const allBtns = optsDiv.querySelectorAll('button');
@@ -151,12 +153,14 @@ function renderInput(container, task, explEl, resolve, isBonus, compact) {
         }
         
         if (isCorrect) {
+             playSound('correct');
             input.style.borderColor = 'var(--green)';
             input.style.background = 'rgba(16,185,129,0.2)';
             explEl.textContent = '✅ ' + task.explanation;
             explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show good';
             resolve({ isCorrect: true, isBonus });
         } else {
+            playSound('wrong');
             input.style.borderColor = 'var(--red)';
             input.style.background = 'rgba(239,68,68,0.15)';
             explEl.textContent = '🤔 ' + task.explanation + ' ✅ ' + task.correctAns;
