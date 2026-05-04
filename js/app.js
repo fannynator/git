@@ -37,6 +37,7 @@ function setupCatPet() {
         catBody.classList.add('petted');
         setTimeout(() => catBody.classList.remove('petted'), 600);
         state.totalPets++;
+        playSound('pet');
         checkAchievements();
         
         const particle = document.createElement('span');
