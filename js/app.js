@@ -3,7 +3,7 @@ import { $, $$, showToast } from './utils.js';
 import { state, loadState, saveState, unlockAchievement, checkAchievements } from './state.js';
 import { SUBJECTS, CAT_SPEECH, SUBJECT_EMOJI } from './config.js';
 import { renderSkillTree } from './components/skillTree.js';
-import { startLesson, closeLesson, nextLessonStep } from './components/lesson.js';
+import { startLesson, closeLesson, nextLessonStep, checkSavedLesson } from './components/lesson.js';
 import { openStoryPanel, closeStory, nextStoryStep } from './components/story.js';
 import { renderTrapsPanel, updateTrapsBadge } from './components/trap.js';
 import { renderProfile } from './components/profile.js';
