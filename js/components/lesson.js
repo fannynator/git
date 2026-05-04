@@ -262,6 +262,7 @@ function finishLesson() {
     updateStats();
     unlockAchievement('student');
     if (w === 0) unlockAchievement('master');
+    playSound(w === 0 ? 'achievement' : 'correct');
     
     $$('#lessonSteps .lstep-dot').forEach(d => {
         d.classList.add('done');
