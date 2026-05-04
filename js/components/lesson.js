@@ -291,29 +291,42 @@ function finishLesson() {
 /**
  * Проверить и восстановить незавершённый урок при загрузке страницы
  */
+/**
+ * Проверить и восстановить незавершённый урок при загрузке страницы
+ */
 export function checkSavedLesson() {
     const saved = localStorage.getItem(LESSON_STORAGE_KEY);
-    if (!saved) return false;
+    if (!saved) {
+        console.log('🔍 Нет сохранённого урока');
+        return false;
+    }
     
     try {
         const progress = JSON.parse(saved);
         if (!progress.skillId || !progress.tasks || progress.tasks.length === 0) {
+            console.log('🔍 Сохранённый урок пустой — удаляю');
             clearLessonProgress();
             return false;
         }
         
-        // Показываем диалог: продолжить или начать заново
+        const skill = getCurrentSkills().find(s => s.id === progress.skillId);
+        const skillName = skill ? skill.name : 'Неизвестно';
+        
+        console.log('🔍 Найден сохранённый урок:', skillName, 'шаг', progress.step, 'из', progress.tasks.length);
+        
+        // Показываем диалог
         const resume = confirm(
-            `У тебя есть незавершённый урок по теме «${getCurrentSkills().find(s => s.id === progress.skillId)?.name || 'Неизвестно'}».\n\n` +
-            `Пройдено: ${progress.step} из ${progress.tasks.length} заданий.\nВерных ответов: ${progress.correct}.\n\n` +
+            `🐱 У тебя есть незавершённый урок!\n\n` +
+            `📚 Тема: «${skillName}»\n` +
+            `📍 Пройдено: ${progress.step} из ${progress.tasks.length} заданий\n` +
+            `✅ Верных ответов: ${progress.correct}\n\n` +
             `Продолжить урок?`
         );
         
         if (resume) {
             if (loadLessonProgress()) {
                 const im = state.subject === 'math';
-                const skill = getCurrentSkills().find(s => s.id === state.lessonSkillId);
-                $('#lessonTitle').textContent = (im ? '🧮 ' : '📝 ') + (skill ? skill.name : 'Урок');
+                $('#lessonTitle').textContent = (im ? '🧮 ' : '📝 ') + skillName;
                 $('#lessonContainer').className = 'lesson-container ' + (im ? 'math-lesson' : 'rus-lesson');
                 $('#lessonHeader').className = 'lesson-header ' + (im ? 'math-bar' : 'rus-bar');
                 $('#lessonNextBtn').className = 'lesson-next ' + (im ? 'math-next' : 'rus-next');
@@ -326,12 +339,15 @@ export function checkSavedLesson() {
                 $('#lessonFinishBlock').classList.remove('show');
                 $('#lessonScene').style.display = 'flex';
                 renderLessonStep();
+                console.log('✅ Урок восстановлен');
                 return true;
             }
         } else {
+            console.log('👋 Пользователь отказался — удаляю сохранение');
             clearLessonProgress();
         }
     } catch (e) {
+        console.warn('⚠ Ошибка восстановления урока:', e);
         clearLessonProgress();
     }
     
