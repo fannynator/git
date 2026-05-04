@@ -126,6 +126,8 @@ function init() {
     setupCatPet();
     bindEvents();
     startTutorial();
+    // Восстановление урока — после туториала, чтобы не перекрывало
+    setTimeout(() => checkSavedLesson(), 500);
     console.log('🐱 v15 МОДУЛЬНАЯ — всё чисто!');
 }
 
