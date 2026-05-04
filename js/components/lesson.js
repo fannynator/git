@@ -1,5 +1,5 @@
 // js/components/lesson.js
-
+import { playSound } from '../sounds.js';
 import { $, $$, showToast } from '../utils.js';
 import { state, saveState, getCurrentSkills, unlockAchievement, checkAchievements } from '../state.js';
 import { GEMS, SKILL, CAT_SPEECH, STORAGE_KEY } from '../config.js';
