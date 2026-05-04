@@ -1,0 +1,17 @@
+{
+  "name": "Кот Учёный",
+  "short_name": "Кот Учёный",
+  "description": "Математика и русский язык в игровой форме",
+ "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
