@@ -257,6 +257,19 @@ function finishLesson() {
     if (w === 0) unlockAchievement('master');
     playSound(w === 0 ? 'achievement' : 'correct');
     
+    // ═══════════════ НАЧИСЛЕНИЕ ПРОГРЕССА НАВЫКУ ═══════════════
+    const skill = getCurrentSkills().find(s => s.id === state.lessonSkillId);
+    if (skill) {
+        const ratio = c / totalTasks;
+        const np = Math.min(100, skill.progress + Math.round(ratio * 100));
+        skill.progress = np;
+        if (np >= SKILL.PROGRESS_TO_COMPLETE) {
+            skill.status = 'completed';
+            unlockNext(skill);
+        }
+    }
+    // ═══════════════════════════════════════════════════════════
+    
     $$('#lessonSteps .lstep-dot').forEach(d => {
         d.classList.add('done');
         d.classList.remove('current', 'wrong');
@@ -269,8 +282,12 @@ function finishLesson() {
     
     updateTrapsBadge();
     saveState();
+    
+    // Сбрасываем состояние урока
+    state.currentLesson = null;
+    state.lessonTasks = [];
+    renderSkillTree();
 }
-
 /**
  * Проверить и восстановить незавершённый урок при загрузке страницы
  */
