@@ -343,10 +343,14 @@ export function checkSavedLesson() {
                 console.log('✅ Урок восстановлен');
                 return true;
             }
-        } else {
-            console.log('👋 Пользователь отказался — удаляю сохранение');
-            clearLessonProgress();
-        }
+       } else {
+    console.log('👋 Пользователь отказался — начинаю заново');
+    clearLessonProgress();
+    // Если отказался — начинаем новый урок того же навыка с нуля
+    if (progress.skillId) {
+        startLesson(progress.skillId);
+    }
+}
     } catch (e) {
         console.warn('⚠ Ошибка восстановления урока:', e);
         clearLessonProgress();
