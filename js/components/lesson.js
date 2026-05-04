@@ -117,12 +117,13 @@ function updateDots() {
 }
 
 export async function closeLesson() {
-    clearLessonProgress();
+    // НЕ удаляем сохранение — оставляем для восстановления
+    // clearLessonProgress(); ← УБИРАЕМ эту строку
+    
     $('#lessonOverlay').classList.remove('active');
     
     // ВАЖНО: при закрытии урока НЕ начисляем прогресс навыку!
     // Прогресс начисляется только в finishLesson() при полном прохождении.
-    // Сохраняем только ловушки, которые уже созданы.
     
     state.currentLesson = null;
     state.lessonTasks = [];
