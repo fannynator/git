@@ -1,3 +1,4 @@
+import { playSound } from './sounds.js';
 import { $, $$, showToast } from './utils.js';
 import { state, loadState, saveState, unlockAchievement, checkAchievements } from './state.js';
 import { SUBJECTS, CAT_SPEECH, SUBJECT_EMOJI } from './config.js';
