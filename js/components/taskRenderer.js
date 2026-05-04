@@ -1,3 +1,4 @@
+import { playSound } from '../sounds.js';
 import { $, $$ } from '../utils.js';
 
 export function renderTask(container, task, options = {}) {
