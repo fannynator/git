@@ -1617,3 +1617,50 @@ body {
     cursor: pointer;
     font-family: inherit;
 }
+
+/* ========== АНИМАЦИЯ ПЕРЕХОДА МЕЖДУ ЗАДАНИЯМИ ========== */
+.lesson-scene {
+    animation: fadeSlideIn 0.35s ease;
+}
+
+@keyframes fadeSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.lesson-scene.task-transition {
+    animation: fadeSlideOut 0.2s ease forwards;
+}
+
+@keyframes fadeSlideOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+}
+
+/* Анимация появления кнопки "Далее" */
+.lesson-next.show {
+    animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
