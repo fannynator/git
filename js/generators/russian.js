@@ -68,12 +68,44 @@ export function generateSoftLesson() {
     const tasks = [];
 
     selected.forEach((d, i) => {
+        const opts = shuffle([d.a, d.wrong]);
+        const correctIdx = opts.indexOf(d.a);
+        
         if (i < 4) {
-            tasks.push(choiceT('📝', 'Выбор', 'badge-choice', `Вставь: «${d.q}»`, d.a, d.hint));
+            tasks.push({
+                type: 'choice',
+                emoji: '📝',
+                badge: 'Выбор',
+                badgeClass: 'badge-choice',
+                question: `Вставь: «${d.q}»`,
+                options: opts,
+                correctIdx: correctIdx,
+                correctAns: d.a,
+                explanation: d.hint
+            });
         } else if (i < 6) {
-            tasks.push(inputT('✏️', 'Ввод', 'badge-input', `Впиши (ь/ъ): «${d.q}»`, d.a, d.hint));
+            tasks.push({
+                type: 'input',
+                emoji: '✏️',
+                badge: 'Ввод',
+                badgeClass: 'badge-input',
+                question: `Впиши (ь/ъ): «${d.q}»`,
+                correctAns: d.a,
+                explanation: d.hint
+            });
         } else if (i === 6) {
-            tasks.push(choiceT('⚠️', 'Ловушка', 'badge-trap', '«под_езд» — ь или ъ?', 'ъ', 'После приставки — Ъ!'));
+            const trapOpts = shuffle(['ъ', 'ь']);
+            tasks.push({
+                type: 'choice',
+                emoji: '⚠️',
+                badge: 'Ловушка',
+                badgeClass: 'badge-trap',
+                question: '«под_езд» — ь или ъ?',
+                options: trapOpts,
+                correctIdx: trapOpts.indexOf('ъ'),
+                correctAns: 'ъ',
+                explanation: 'После приставки — Ъ!'
+            });
         } else {
             tasks.push({
                 type: 'boss_soft',
@@ -93,7 +125,6 @@ export function generateSoftLesson() {
 
     return tasks;
 }
-
 /**
  * Генерация урока "Безударные гласные"
  */
