@@ -10,6 +10,7 @@ import { renderTrapsPanel, updateTrapsBadge } from './components/trap.js';
 import { renderProfile } from './components/profile.js';
 import { startTutorial } from './components/tutorial.js';
 import { playSound } from './sounds.js';
+import { createLottie } from './lottie.js';
 
 export function updateStats() {
     $('#gemCount').textContent = state.gems;
@@ -228,6 +229,7 @@ function init() {
     bindEvents();
     startTutorial();
     setTimeout(() => checkSavedLesson(), 500);
+    createLottie('catBody', 'cat', { loop: true, speed: 0.7 });
     console.log('🐱 v15 — готов к мурчанию!');
 }
 
