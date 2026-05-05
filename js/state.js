@@ -44,10 +44,17 @@ export const loadState = () => {
 
 export const getCurrentSkills = () => state.skills[state.subject];
 
-export const unlockAchievement = (id) => {
+export const unlockAchievement = (id, onUnlock) => {
     const ach = state.achievements[id];
     if (!ach || ach.unlocked) return false;
-    ach.unlocked = true; state.gems += GEMS.ACHIEVEMENT_REWARD; saveState(); return true;
+    ach.unlocked = true;
+    state.gems += GEMS.ACHIEVEMENT_REWARD;
+    saveState();
+    // Если передан колбэк — вызываем для показа тоста
+    if (onUnlock) {
+        onUnlock(ach.name, ach.desc);
+    }
+    return true;
 };
 
 export const checkAchievements = () => {
