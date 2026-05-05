@@ -14,6 +14,14 @@ export function updateStats() {
     $('#gemCount').textContent = state.gems;
     $('#streakCount').textContent = state.streak;
 }
+export function showAchievementToast(name, desc) {
+    const toast = document.getElementById('achToast');
+    const text = document.getElementById('achToastText');
+    if (!toast || !text) return;
+    text.textContent = name + ' — ' + desc;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+}
 
 export function updateSubjectUI() {
     const im = state.subject === SUBJECTS.MATH;
