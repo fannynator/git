@@ -134,38 +134,45 @@ export function generateSoftLesson() {
  */
 export function generateVowelLesson() {
     const dictionary = [
-        { q: 'л_сной', a: 'е', hint: 'лес' },
-        { q: 'в_да', a: 'о', hint: 'воды' },
-        { q: 'тр_ва', a: 'а', hint: 'травка' },
-        { q: 'ст_на', a: 'е', hint: 'стены' },
-        { q: 'з_мля', a: 'е', hint: 'земли' },
-        { q: 'м_ря', a: 'о', hint: 'море' },
-        { q: 'г_ра', a: 'о', hint: 'горы' },
-        { q: 'сл_ды', a: 'е', hint: 'след' }
+        { q: 'л_сной', a: 'е', hint: 'лес', wrong: 'и' },
+        { q: 'в_да', a: 'о', hint: 'воды', wrong: 'а' },
+        { q: 'тр_ва', a: 'а', hint: 'травка', wrong: 'о' },
+        { q: 'ст_на', a: 'е', hint: 'стены', wrong: 'и' },
+        { q: 'з_мля', a: 'е', hint: 'земли', wrong: 'и' },
+        { q: 'м_ря', a: 'о', hint: 'море', wrong: 'а' },
+        { q: 'г_ра', a: 'о', hint: 'горы', wrong: 'а' },
+        { q: 'сл_ды', a: 'е', hint: 'след', wrong: 'и' }
     ];
 
     const selected = shuffle(dictionary).slice(0, 8);
     const tasks = [];
 
     selected.forEach((d, i) => {
+        const opts = shuffle([d.a, d.wrong]);
+        const correctIdx = opts.indexOf(d.a);
+        
         if (i < 4) {
-            tasks.push(choiceT('📝', 'Выбор', 'badge-choice', `Вставь: «${d.q}»`, d.a, d.hint));
+            tasks.push({
+                type: 'choice', emoji: '📝', badge: 'Выбор', badgeClass: 'badge-choice',
+                question: `Вставь: «${d.q}»`, options: opts, correctIdx, correctAns: d.a, explanation: d.hint
+            });
         } else if (i < 6) {
-            tasks.push(inputT('✏️', 'Ввод', 'badge-input', `Впиши: «${d.q}»`, d.a, d.hint));
+            tasks.push({
+                type: 'input', emoji: '✏️', badge: 'Ввод', badgeClass: 'badge-input',
+                question: `Впиши: «${d.q}»`, correctAns: d.a, explanation: d.hint
+            });
         } else if (i === 6) {
-            tasks.push(choiceT('⚠️', 'Ловушка', 'badge-trap', '«л_сной» — е или и?', 'е', 'лес → лЕсной'));
+            const trapOpts = shuffle(['е', 'и']);
+            tasks.push({
+                type: 'choice', emoji: '⚠️', badge: 'Ловушка', badgeClass: 'badge-trap',
+                question: '«л_сной» — е или и?', options: trapOpts,
+                correctIdx: trapOpts.indexOf('е'), correctAns: 'е', explanation: 'лес → лЕсной'
+            });
         } else {
             tasks.push({
-                type: 'boss_vowel',
-                emoji: '⭐',
-                badge: 'Босс',
-                badgeClass: 'badge-boss',
+                type: 'boss_vowel', emoji: '⭐', badge: 'Босс', badgeClass: 'badge-boss',
                 question: 'Вставь:',
-                words: [
-                    { text: 'л_сной', answer: 'е' },
-                    { text: 'в_да', answer: 'о' },
-                    { text: 'з_мля', answer: 'е' }
-                ],
+                words: [{ text: 'л_сной', answer: 'е' }, { text: 'в_да', answer: 'о' }, { text: 'з_мля', answer: 'е' }],
                 explanation: 'лЕс, вОды, зЕмли'
             });
         }
