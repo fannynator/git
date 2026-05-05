@@ -148,7 +148,6 @@ export function playSound(type) {
     switch (type) {
         case 'correct':
             playCorrectSound();
-            spawnConfetti(); // Конфетти при правильном ответе
             break;
         case 'wrong':
             playWrongSound();
