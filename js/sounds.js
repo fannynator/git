@@ -162,3 +162,27 @@ export function playSound(type) {
             break;
     }
 }
+/**
+ * Запустить листопад при завершении навыка
+ */
+export function spawnLeaves() {
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000;';
+    document.body.appendChild(container);
+    
+    const leaves = ['🍃', '🌿', '🍂', '🍁', '🌱', '✨'];
+    
+    for (let i = 0; i < 20; i++) {
+        const leaf = document.createElement('span');
+        leaf.className = 'leaf-particle';
+        leaf.textContent = leaves[Math.floor(Math.random() * leaves.length)];
+        leaf.style.left = Math.random() * 100 + '%';
+        leaf.style.top = -(Math.random() * 50) + 'px';
+        leaf.style.fontSize = (Math.random() * 16 + 10) + 'px';
+        leaf.style.animationDelay = Math.random() * 0.8 + 's';
+        leaf.style.animationDuration = (Math.random() * 1.5 + 2) + 's';
+        container.appendChild(leaf);
+    }
+    
+    setTimeout(() => container.remove(), 3500);
+}
