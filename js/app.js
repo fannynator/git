@@ -224,6 +224,7 @@ function init() {
     updateTrapsBadge();
     updateStats();
     setupCatPet();
+    setupCatEyeTracking();
     bindEvents();
     startTutorial();
     setTimeout(() => checkSavedLesson(), 500);
