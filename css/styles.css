@@ -2067,3 +2067,29 @@ body::before {
         opacity: 0;
     }
 }
+
+/* ========== КОТ СЛЕДИТ ЗА КУРСОРОМ ========== */
+.cat-emoji {
+    position: relative;
+    transition: transform 0.1s ease;
+}
+
+/* Зрачки кота */
+.cat-eyes {
+    position: absolute;
+    top: 28%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.cat-eye {
+    width: 6px;
+    height: 6px;
+    background: #1E293B;
+    border-radius: 50%;
+    transition: transform 0.05s ease;
+}
