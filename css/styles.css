@@ -1543,3 +1543,21 @@ body::before {
 .explanation-box.show { display: block; }
 .explanation-box.good { border-left-color: var(--green); background: rgba(16, 185, 129, 0.08); font-weight: 600; }
 .explanation-box.bad { border-left-color: var(--red); background: rgba(239, 68, 68, 0.06); font-weight: 600; }
+
+/* Lottie-кот */
+#catBody {
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    position: relative;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+#catBody svg {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#catBody.petted {
+    animation: purr 0.6s ease;
+}
