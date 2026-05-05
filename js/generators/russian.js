@@ -21,26 +21,30 @@ export function generateZhishiLesson() {
 
     selected.forEach((d, i) => {
         const opts = shuffle([d.a, d.wrong]);
-        const ci = opts.indexOf(d.a);
-
+        const correctIdx = opts.indexOf(d.a);
+        
         if (i < 4) {
-            tasks.push(choiceT('📝', 'Выбор', 'badge-choice', `Вставь: «${d.q}»`, d.a, d.hint));
+            tasks.push({
+                type: 'choice', emoji: '📝', badge: 'Выбор', badgeClass: 'badge-choice',
+                question: `Вставь: «${d.q}»`, options: opts, correctIdx, correctAns: d.a, explanation: d.hint
+            });
         } else if (i < 6) {
-            tasks.push(inputT('✏️', 'Ввод', 'badge-input', `Впиши: «${d.q}»`, d.a, d.hint));
+            tasks.push({
+                type: 'input', emoji: '✏️', badge: 'Ввод', badgeClass: 'badge-input',
+                question: `Впиши: «${d.q}»`, correctAns: d.a, explanation: d.hint
+            });
         } else if (i === 6) {
-            tasks.push(choiceT('⚠️', 'Ловушка', 'badge-trap', '«ж_раф» — и или ы?', 'и', 'ЖИ с И!'));
+            const trapOpts = shuffle(['и', 'ы']);
+            tasks.push({
+                type: 'choice', emoji: '⚠️', badge: 'Ловушка', badgeClass: 'badge-trap',
+                question: '«ж_раф» — и или ы?', options: trapOpts,
+                correctIdx: trapOpts.indexOf('и'), correctAns: 'и', explanation: 'ЖИ с И!'
+            });
         } else {
             tasks.push({
-                type: 'boss_zhishi',
-                emoji: '⭐',
-                badge: 'Босс',
-                badgeClass: 'badge-boss',
+                type: 'boss_zhishi', emoji: '⭐', badge: 'Босс', badgeClass: 'badge-boss',
                 question: 'Вставь:',
-                words: [
-                    { text: 'ж_знь', answer: 'и' },
-                    { text: 'ч_до', answer: 'у' },
-                    { text: 'рощ_', answer: 'а' }
-                ],
+                words: [{ text: 'ж_знь', answer: 'и' }, { text: 'ч_до', answer: 'у' }, { text: 'рощ_', answer: 'а' }],
                 explanation: 'ЖИ, ЧУ, ЩА'
             });
         }
