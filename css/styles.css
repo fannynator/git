@@ -1697,23 +1697,87 @@ body {
     font-weight: 600;
 }
 
-/* ========== ПРОГРЕСС-БАР УРОКА ========== */
+/* ========== ПРОГРЕСС-БАР (над шапкой) ========== */
 .lesson-progress-wrapper {
     width: 100%;
     height: 3px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.08);
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .lesson-progress-bar {
     height: 100%;
     background: var(--gold);
-    border-radius: 2px;
     transition: width 0.5s ease;
+    border-radius: 0;
 }
 
 .lesson-progress-bar.complete {
     background: var(--green);
+}
+
+/* ========== ШАПКА УРОКА ========== */
+.lesson-header {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    flex-shrink: 0;
+}
+
+.lesson-header.math-bar {
+    background: rgba(30, 41, 59, 0.9);
+}
+
+.lesson-header.rus-bar {
+    background: rgba(45, 17, 84, 0.9);
+}
+
+.lesson-title {
+    font-weight: 800;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lesson-steps {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.lstep-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.lstep-dot.done {
+    background: var(--green);
+    box-shadow: 0 0 4px rgba(16, 185, 129, 0.5);
+}
+
+.lstep-dot.current {
+    background: var(--gold);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+    animation: pulse-dot 2s infinite;
+}
+
+.lstep-dot.wrong {
+    background: var(--red);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+}
+
+@keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 4px rgba(251, 191, 36, 0.4); }
+    50% { box-shadow: 0 0 8px rgba(251, 191, 36, 0.8); }
 }
