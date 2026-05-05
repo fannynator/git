@@ -2,6 +2,7 @@
 import { playSound } from '../sounds.js';
 import { $, $$, showToast } from '../utils.js';
 import { state, saveState, getCurrentSkills, unlockAchievement, checkAchievements } from '../state.js';
+import { updateStats, showAchievementToast } from '../app.js';
 import { GEMS, SKILL, CAT_SPEECH, STORAGE_KEY } from '../config.js';
 import { generateMathLesson } from '../generators/math.js';
 import { generateRusLesson } from '../generators/russian.js';
