@@ -134,6 +134,7 @@ function updateDots() {
         if (i < state.lessonStep) d.classList.add('done');
         else if (i === state.lessonStep) d.classList.add(state.lessonWrong > 0 ? 'wrong' : 'current');
     });
+    updateProgressBar();
 }
 function updateProgressBar() {
     const total = state.lessonTasks.filter(t => !t.isBonus).length;
