@@ -36,17 +36,61 @@ function openTrapQuiz(trap) {
     const expl = $('#tqExpl');
     let done = false;
     const success = () => {
-        trap.defuses++;
-        trap.nextDate = new Date(Date.now() + getTrapDelay(trap.defuses)).toISOString();
-        state.gems += GEMS.TRAP_BASE_REWARD + trap.defuses * GEMS.TRAP_DEFUSE_MULTIPLIER;
-        updateStats();
-        showToast(trap.defuses >= TRAP.MAX_DEFUSES ? '🏆' : '✅', trap.defuses >= TRAP.MAX_DEFUSES ? 'Готово!' : `+${GEMS.TRAP_BASE_REWARD + trap.defuses * GEMS.TRAP_DEFUSE_MULTIPLIER} 💎`, $('#toast'));
-        checkAchievements((name, desc) => showAchievementToast(name, desc));
-        updateTrapsBadge();
-        renderTrapsPanel();
-        saveState();
-        setTimeout(() => $('#trapQuizOverlay').classList.remove('active'), 600);
-    };
+    trap.defuses++;
+    trap.nextDate = new Date(Date.now() + getTrapDelay(trap.defuses)).toISOString();
+    state.gems += GEMS.TRAP_BASE_REWARD + trap.defuses * GEMS.TRAP_DEFUSE_MULTIPLIER;
+    updateStats();
+    
+    // ═══════════ НАЧИСЛЕНИЕ ПРОГРЕССА НАВЫКУ (ТОЛЬКО ПЕРВОЕ ОБЕЗВРЕЖИВАНИЕ) ═══════════
+    if (trap.defuses === 1 && trap.id && trap.id.startsWith('lesson_')) {
+        const parts = trap.id.split('_');
+        if (parts.length >= 2) {
+            const skillId = parts[1];
+            const skills = getCurrentSkills();
+            const skill = skills.find(s => s.id === skillId);
+            
+            if (skill && skill.status === 'current' && skill.progress < 100) {
+                // Считаем все ловушки от этого навыка
+                const allTraps = state.traps.filter(
+                    t => t.id.startsWith('lesson_' + skillId + '_') && t.subject === state.subject
+                );
+                // Сколько из них уже обезврежено хотя бы 1 раз
+                const defusedOnce = allTraps.filter(t => t.defuses >= 1).length;
+                const totalTraps = allTraps.length;
+                
+                // Оставшийся прогресс делим на оставшиеся ловушки
+                const remaining = 100 - skill.progress;
+                const remainingTraps = totalTraps - defusedOnce + 1; // +1 потому что текущая тоже считается
+                const progressForThis = Math.ceil(remaining / remainingTraps);
+                
+                skill.progress = Math.min(100, skill.progress + progressForThis);
+                
+                if (skill.progress >= 100) {
+                    skill.status = 'completed';
+                    const ci = skills.findIndex(s => s.id === skillId);
+                    if (ci >= 0 && ci + 1 < skills.length && skills[ci + 1].status === 'locked') {
+                        skills[ci + 1].status = 'current';
+                        showToast('🔓', 'Новый навык открыт через ловушки!', $('#toast'));
+                    }
+                }
+                saveState();
+                renderSkillTree();
+            }
+        }
+    }
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    showToast(
+        trap.defuses >= TRAP.MAX_DEFUSES ? '🏆' : '✅',
+        trap.defuses >= TRAP.MAX_DEFUSES ? 'Ловушка обезврежена!' : `+${GEMS.TRAP_BASE_REWARD + trap.defuses * GEMS.TRAP_DEFUSE_MULTIPLIER} 💎`,
+        $('#toast')
+    );
+    checkAchievements((name, desc) => showAchievementToast(name, desc));
+    updateTrapsBadge();
+    renderTrapsPanel();
+    saveState();
+    setTimeout(() => $('#trapQuizOverlay').classList.remove('active'), 600);
+};
 
     if (trap.isInput) {
         const inp = $('#tqInp'), btn = $('#tqSub');
