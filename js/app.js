@@ -95,6 +95,52 @@ function setupCatPet() {
     });
 }
 
+function setupCatEyeTracking() {
+    const catBody = $('#catBody');
+    if (!catBody) return;
+    
+    // Добавляем зрачки
+    const eyes = document.createElement('span');
+    eyes.className = 'cat-eyes';
+    eyes.innerHTML = '<span class="cat-eye"></span><span class="cat-eye"></span>';
+    catBody.appendChild(eyes);
+    
+    document.addEventListener('mousemove', (e) => {
+        const rect = catBody.getBoundingClientRect();
+        const catX = rect.left + rect.width / 2;
+        const catY = rect.top + rect.height / 3;
+        
+        const angle = Math.atan2(e.clientY - catY, e.clientX - catX);
+        const maxShift = 2;
+        const shiftX = Math.cos(angle) * maxShift;
+        const shiftY = Math.sin(angle) * maxShift;
+        
+        const eyeEls = eyes.querySelectorAll('.cat-eye');
+        eyeEls.forEach(eye => {
+            eye.style.transform = `translate(${shiftX}px, ${shiftY}px)`;
+        });
+    });
+    
+    // На телефонах — следим за касанием
+    document.addEventListener('touchmove', (e) => {
+        if (!e.touches[0]) return;
+        const touch = e.touches[0];
+        const rect = catBody.getBoundingClientRect();
+        const catX = rect.left + rect.width / 2;
+        const catY = rect.top + rect.height / 3;
+        
+        const angle = Math.atan2(touch.clientY - catY, touch.clientX - catX);
+        const maxShift = 2;
+        const shiftX = Math.cos(angle) * maxShift;
+        const shiftY = Math.sin(angle) * maxShift;
+        
+        const eyeEls = eyes.querySelectorAll('.cat-eye');
+        eyeEls.forEach(eye => {
+            eye.style.transform = `translate(${shiftX}px, ${shiftY}px)`;
+        });
+    });
+}
+
 function bindEvents() {
     // Переключение предметов
     $('#btnMath').addEventListener('click', () => {
