@@ -161,9 +161,24 @@ async function renderLessonStep() {
 
     $('#lessonNextBtn').classList.remove('show');
     $('#lessonFinishBlock').classList.remove('show');
-    $('#lessonScene').style.display = 'flex';
+    
+    const scene = $('#lessonScene');
+    
+    // Анимация исчезновения старого задания
+    if (scene.children.length > 0) {
+        scene.classList.add('task-transition');
+        await new Promise(r => setTimeout(r, 200));
+        scene.classList.remove('task-transition');
+    }
+    
+    // Очищаем и показываем новое
+    scene.style.display = 'flex';
+    // Принудительно сбрасываем анимацию
+    scene.style.animation = 'none';
+    scene.offsetHeight; // reflow
+    scene.style.animation = '';
 
-    const result = await renderTask($('#lessonScene'), task, { isBonus: task.isBonus || false });
+    const result = await renderTask(scene, task, { isBonus: task.isBonus || false });
     
     if (!task.isBonus) {
         if (result.isCorrect) state.lessonCorrect++;
@@ -176,7 +191,7 @@ async function renderLessonStep() {
     updateDots();
     saveLessonProgress();
     setTimeout(() => $('#lessonNextBtn').classList.add('show'), 1000);
-    $('#lessonScene').scrollTop = 0;
+    scene.scrollTop = 0;
 }
 
 function addLessonTrap(task) {
