@@ -135,6 +135,21 @@ function updateDots() {
         else if (i === state.lessonStep) d.classList.add(state.lessonWrong > 0 ? 'wrong' : 'current');
     });
 }
+function updateProgressBar() {
+    const total = state.lessonTasks.filter(t => !t.isBonus).length;
+    const done = state.lessonStep;
+    const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+    
+    const bar = $('#lessonProgressBar');
+    if (bar) {
+        bar.style.width = percent + '%';
+        if (percent >= 100) {
+            bar.classList.add('complete');
+        } else {
+            bar.classList.remove('complete');
+        }
+    }
+}
 
 export async function closeLesson() {
     $('#lessonOverlay').classList.remove('active');
