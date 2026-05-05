@@ -128,7 +128,7 @@ export function spawnConfetti() {
     const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
     const shapes = ['●', '■', '▲', '★', '♦'];
     
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 12; i++) {
         const piece = document.createElement('span');
         piece.className = 'confetti-piece';
         piece.textContent = shapes[Math.floor(Math.random() * shapes.length)];
