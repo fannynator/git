@@ -175,7 +175,7 @@ export async function closeLesson() {
     state.currentLesson = null;
     state.lessonTasks = [];
     renderSkillTree();
-    checkAchievements();
+    checkAchievements((name, desc) => showAchievementToast(name, desc));
     updateTrapsBadge();
     saveState();
 }
