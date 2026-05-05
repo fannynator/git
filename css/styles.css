@@ -1696,13 +1696,14 @@ body {
     background: rgba(239, 68, 68, 0.06);
     font-weight: 600;
 }
+
 /* ========== ПРОГРЕСС-БАР УРОКА ========== */
 .lesson-progress-wrapper {
     width: 100%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.15);
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     overflow: hidden;
 }
 
@@ -1711,10 +1712,8 @@ body {
     background: var(--gold);
     border-radius: 2px;
     transition: width 0.5s ease;
-    box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
 }
 
 .lesson-progress-bar.complete {
     background: var(--green);
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
 }
