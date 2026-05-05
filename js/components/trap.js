@@ -4,6 +4,7 @@ import { $, $$, showToast } from '../utils.js';
 import { state, saveState, getAvailableTraps, getLockedTraps, getDefusedTraps, getTrapDelay, unlockAchievement, checkAchievements } from '../state.js';
 import { GEMS, TRAP } from '../config.js';
 import { updateStats, showAchievementToast } from '../app.js';
+import { spawnLeaves } from '../sounds.js';
 import { renderSkillTree } from './skillTree.js';
 
 export function updateTrapsBadge() {
@@ -155,6 +156,7 @@ function openTrapQuiz(trap) {
                         if (ci >= 0 && ci + 1 < skills.length && skills[ci + 1].status === 'locked') {
                             skills[ci + 1].status = 'current';
                             showToast('🔓', 'Новый навык открыт через ловушки!', $('#toast'));
+                            spawnLeaves();
                         }
                     }
                     saveState();
