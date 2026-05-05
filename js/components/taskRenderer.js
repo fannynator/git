@@ -65,7 +65,6 @@ function renderChoice(container, task, explEl, resolve, isBonus, compact) {
     optsDiv.className = optsClass;
     
     const correctAnswer = task.correctAns;
-    console.log('[choice] Правильный ответ:', correctAnswer, 'Варианты:', task.options, 'correctIdx:', task.correctIdx);
     
     task.options.forEach((optText, idx) => {
         const btn = document.createElement('button');
@@ -75,32 +74,39 @@ function renderChoice(container, task, explEl, resolve, isBonus, compact) {
         btn.dataset.value = String(optText);
         
         btn.addEventListener('click', () => {
-            // Блокируем все кнопки
             optsDiv.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
             
-            const chosenValue = btn.dataset.value;
-            const isCorrect = String(chosenValue) === String(correctAnswer);
-            
-            console.log('[choice] Выбрано:', chosenValue, 'Правильное:', correctAnswer, 'Верно?', isCorrect);
+            const isCorrect = String(btn.dataset.value) === String(correctAnswer);
             
             if (isCorrect) {
                 playSound('correct');
                 btn.classList.add('correct-pick');
-                explEl.textContent = '✅ ' + task.explanation;
+                // Добавляем иконку галочки
+                btn.textContent = '✅ ' + optText;
+                
+                explEl.innerHTML = '<span style="font-size:16px;">✅</span> ' + task.explanation;
                 explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show good';
-                resolve({ isCorrect: true, isBonus });
+                
+                // Лёгкая задержка для анимации
+                setTimeout(() => resolve({ isCorrect: true, isBonus }), 400);
             } else {
                 playSound('wrong');
                 btn.classList.add('wrong-pick');
-                // Подсвечиваем правильную кнопку по значению
+                // Добавляем иконку крестика
+                btn.textContent = '❌ ' + optText;
+                
+                // Подсвечиваем правильный ответ
                 optsDiv.querySelectorAll('button').forEach(b => {
                     if (String(b.dataset.value) === String(correctAnswer)) {
                         b.classList.add('correct-pick');
+                        b.textContent = '✅ ' + b.dataset.value;
                     }
                 });
-                explEl.textContent = '🤔 ' + task.explanation;
+                
+                explEl.innerHTML = '<span style="font-size:16px;">🤔</span> ' + task.explanation;
                 explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show bad';
-                resolve({ isCorrect: false, isBonus });
+                
+                setTimeout(() => resolve({ isCorrect: false, isBonus }), 600);
             }
         });
         
@@ -109,7 +115,6 @@ function renderChoice(container, task, explEl, resolve, isBonus, compact) {
     
     container.appendChild(optsDiv);
 }
-
 /**
  * Задание с текстовым вводом
  */
