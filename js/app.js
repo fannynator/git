@@ -29,19 +29,7 @@ export function showAchievementToast(name, desc) {
 export function setCatMood(mood) {
     const catBody = $('#catBody');
     if (!catBody) return;
-
-    const moods = {
-        happy: '😺',
-        proud: '😸',
-        love: '😻',
-        sad: '😿',
-        wow: '🙀',
-        normal: state.subject === SUBJECTS.MATH ? '🐱' : '😺'
-    };
-
-    const emoji = moods[mood] || moods.normal;
-    catBody.textContent = emoji;
-
+    
     // Лёгкая анимация эмоции
     catBody.style.transform = 'scale(1.2)';
     setTimeout(() => {
