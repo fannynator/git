@@ -163,12 +163,15 @@ export async function closeLesson() {
     saveState();
 }
 
+import { spawnLeaves } from '../sounds.js';
+
 function unlockNext(currentSkill) {
     const skills = getCurrentSkills();
     const ci = skills.findIndex(s => s.id === currentSkill.id);
     if (ci >= 0 && ci + 1 < skills.length && skills[ci + 1].status === 'locked') {
         skills[ci + 1].status = 'current';
         showToast('🔓', 'Новый навык открыт!', $('#toast'));
+        spawnLeaves(); // 🍃 Листопад!
     }
 }
 
