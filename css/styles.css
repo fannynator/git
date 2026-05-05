@@ -2093,3 +2093,22 @@ body::before {
     border-radius: 50%;
     transition: transform 0.05s ease;
 }
+/* ========== ПУЛЬСАЦИЯ КНОПКИ ДАЛЕЕ ========== */
+.lesson-next.show,
+.story-next-btn.show {
+    animation: pulseNext 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseNext {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+
+/* ========== УМЕНЬШЕННОЕ КОНФЕТТИ (только 12 штук) ========== */
+.confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    animation: confetti-fall 0.6s ease forwards;
+}
