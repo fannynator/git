@@ -54,38 +54,42 @@
     </div>
 
     <div class="lesson-overlay" id="lessonOverlay">
-        <div class="lesson-container math-lesson" id="lessonContainer">
-            <div class="lesson-header math-bar" id="lessonHeader">
-    <div class="lesson-progress-wrapper" id="lessonProgressWrapper">
-        <div class="lesson-progress-bar" id="lessonProgressBar"></div>
-    </div>
-    <span class="lesson-title" id="lessonTitle">📚</span>
-    <div style="display:flex;align-items:center;gap:6px;">
-        <div class="lesson-steps" id="lessonSteps"></div>
-        <button class="lesson-close" id="lessonCloseBtn">✕</button>
-    </div>
-</div>
-            <div class="lesson-scene" id="lessonScene"></div>
-            <button class="lesson-next math-next" id="lessonNextBtn">Далее ▸</button>
-            <div class="lesson-finish" id="lessonFinishBlock">
-                <div class="finish-emoji">🎉</div>
-                <div class="finish-title" id="lfinishTitle">Урок пройден!</div>
-                <div class="finish-xp" id="lfinishXP"></div>
-                <div class="finish-subtitle" id="lfinishSubtitle"></div>
-                <div class="finish-stats">
-                    <div class="finish-stat">
-                        <div class="finish-stat-val" id="lfinishCorrect" style="color:var(--green);">0</div>
-                        <div class="finish-stat-label">Верно</div>
-                    </div>
-                    <div class="finish-stat">
-                        <div class="finish-stat-val" id="lfinishWrong" style="color:var(--red);">0</div>
-                        <div class="finish-stat-label">Ошибок</div>
-                    </div>
-                </div>
-                <button class="btn-lesson-finish math-finish" id="btnLessonFinish">Завершить</button>
+    <div class="lesson-container math-lesson" id="lessonContainer">
+        <!-- Прогресс-бар как часть контейнера -->
+        <div class="lesson-progress-wrapper" id="lessonProgressWrapper">
+            <div class="lesson-progress-bar" id="lessonProgressBar"></div>
+        </div>
+        <!-- Шапка -->
+        <div class="lesson-header math-bar" id="lessonHeader">
+            <span class="lesson-title" id="lessonTitle">📚</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div class="lesson-steps" id="lessonSteps"></div>
+                <button class="lesson-close" id="lessonCloseBtn">✕</button>
             </div>
         </div>
+        <!-- Сцена -->
+        <div class="lesson-scene" id="lessonScene"></div>
+        <!-- Кнопки -->
+        <button class="lesson-next math-next" id="lessonNextBtn">Далее ▸</button>
+        <div class="lesson-finish" id="lessonFinishBlock">
+            <div class="finish-emoji">🎉</div>
+            <div class="finish-title" id="lfinishTitle">Урок пройден!</div>
+            <div class="finish-xp" id="lfinishXP"></div>
+            <div class="finish-subtitle" id="lfinishSubtitle"></div>
+            <div class="finish-stats">
+                <div class="finish-stat">
+                    <div class="finish-stat-val" style="color:var(--green);" id="lfinishCorrect">0</div>
+                    <div class="finish-stat-label">Верно</div>
+                </div>
+                <div class="finish-stat">
+                    <div class="finish-stat-val" style="color:var(--red);" id="lfinishWrong">0</div>
+                    <div class="finish-stat-label">Ошибок</div>
+                </div>
+            </div>
+            <button class="btn-lesson-finish math-finish" id="btnLessonFinish">Завершить</button>
+        </div>
     </div>
+</div>
 
     <div class="story-overlay" id="storyOverlay">
         <div class="story-container math-story" id="storyContainer">
