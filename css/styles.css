@@ -1664,3 +1664,35 @@ body {
         transform: translateY(0);
     }
 }
+/* ========== УЛУЧШЕННАЯ ПОДСВЕТКА ОТВЕТОВ ========== */
+.lesson-option.correct-pick,
+.task-option.correct-pick {
+    border-color: var(--green) !important;
+    background: rgba(16, 185, 129, 0.2) !important;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+    transform: scale(1.03);
+    font-weight: 800;
+}
+
+.lesson-option.wrong-pick,
+.task-option.wrong-pick {
+    border-color: var(--red) !important;
+    background: rgba(239, 68, 68, 0.15) !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+    animation: shake 0.5s ease;
+}
+
+/* Объяснение с иконкой */
+.lesson-explanation.good,
+.explanation-box.good {
+    border-left-color: var(--green);
+    background: rgba(16, 185, 129, 0.08);
+    font-weight: 600;
+}
+
+.lesson-explanation.bad,
+.explanation-box.bad {
+    border-left-color: var(--red);
+    background: rgba(239, 68, 68, 0.06);
+    font-weight: 600;
+}
