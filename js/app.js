@@ -87,7 +87,9 @@ function setupCatPet() {
         particle.className = 'hearts-particle';
         particle.textContent = ['❤️', '💕', '✨', '💖'][Math.floor(Math.random() * 4)];
         particle.style.left = (Math.random() * 30 - 10) + 'px';
-        particle.style.animationDuration = (Math.random() * 0.6 + 0.8) + 's';
+        particle.style.position = 'absolute';
+        particle.style.pointerEvents = 'none';
+        particle.style.zIndex = '10';
         catBody.appendChild(particle);
         setTimeout(() => particle.remove(), 1200);
 
@@ -95,7 +97,6 @@ function setupCatPet() {
         saveState();
     });
 }
-
 function setupCatEyeTracking() {
     const catBody = $('#catBody');
     if (!catBody) return;
