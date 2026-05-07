@@ -8,7 +8,6 @@ import { startLesson, closeLesson, nextLessonStep, checkSavedLesson } from './co
 import { openStoryPanel, closeStory, nextStoryStep } from './components/story.js';
 import { renderTrapsPanel, updateTrapsBadge } from './components/trap.js';
 import { renderProfile } from './components/profile.js';
-import { renderGames } from './components/games.js';
 import { startTutorial } from './components/tutorial.js';
 import { playSound, spawnLeaves, spawnGems } from './sounds.js';
 
@@ -157,12 +156,10 @@ function bindEvents() {
     $('#navHome').addEventListener('click', () => setActiveNav($('#navHome')));
     $('#navStories').addEventListener('click', () => { setActiveNav($('#navStories')); openStoryPanel(); });
     $('#navTraps').addEventListener('click', () => { setActiveNav($('#navTraps')); renderTrapsPanel(); $('#trapsPanel').classList.add('active'); });
-    $('#navGames').addEventListener('click', () => { setActiveNav($('#navGames')); renderGames(); $('#gamesPanel').classList.add('active'); });
     $('#navProfile').addEventListener('click', () => { setActiveNav($('#navProfile')); renderProfile(); $('#profilePanel').classList.add('active'); });
 
     $('#btnStoryPanelClose').addEventListener('click', () => $('#storyPanel').classList.remove('active'));
     $('#btnTrapsPanelClose').addEventListener('click', () => $('#trapsPanel').classList.remove('active'));
-    $('#btnGamesPanelClose').addEventListener('click', () => $('#gamesPanel').classList.remove('active'));
     $('#btnProfilePanelClose').addEventListener('click', () => $('#profilePanel').classList.remove('active'));
 
     $('#trapQuizOverlay').addEventListener('click', e => { if (e.target === $('#trapQuizOverlay')) { $('#trapQuizOverlay').classList.remove('active'); updateTrapsBadge(); renderTrapsPanel(); } });
@@ -177,8 +174,7 @@ function bindEvents() {
 }
 
 function updateDailyStreak() {
-    // Используем ISO-дату YYYY-MM-DD — надёжно во всех браузерах
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toDateString();
     const lastVisit = localStorage.getItem('kot_ucheniy_last_visit');
     
     if (!lastVisit) {
@@ -188,10 +184,8 @@ function updateDailyStreak() {
         // Уже заходил сегодня — ничего не делаем
         return;
     } else {
-        // Парсим с T00:00:00 для гарантированной кросс-браузерной поддержки
-        const diffDays = Math.floor(
-            (new Date(today + 'T00:00:00') - new Date(lastVisit + 'T00:00:00')) / 86400000
-        );
+        const lastDate = new Date(lastVisit);
+        const diffDays = Math.floor((new Date() - lastDate) / 86400000);
         
         if (diffDays === 1) {
             // Заходил вчера — увеличиваем streak

@@ -2,8 +2,6 @@
 
 import { rnd, shuffle, makeWrongs, choiceT, inputT, pairT, visualT } from '../utils.js';
 
-const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-
 // ═══════════════════════════════════════════════
 //  SVG-заготовки
 // ═══════════════════════════════════════════════
@@ -86,19 +84,19 @@ function subSVG(total, eaten) {
 }
 
 function mulGridSVG(rows, cols) {
-    const cellW = Math.min(32, (260) / cols);
-    const cellH = 32;
-    const W = cols * cellW + 24;
-    const H = rows * cellH + 30;
-    const r = Math.min(10, cellW / 2 - 2);
+    const W = Math.min(300, cols * 36 + 20);
+    const H = rows * 32 + 30;
     let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`;
     out += `<text x="${W / 2}" y="14" text-anchor="middle" font-size="11" fill="#94A3B8" font-weight="700">${rows} ряда × ${cols} 🍎</text>`;
-    for (let rr = 0; rr < rows; rr++) {
-        for (let cc = 0; cc < cols; cc++) {
-            const cxc = 14 + cc * cellW + cellW / 2;
-            const cy = 28 + rr * cellH;
-            out += `<circle cx="${cxc}" cy="${cy}" r="${r}" fill="#F59E0B" stroke="#D97706" stroke-width="1.2"/>`;
-            out += `<line x1="${cxc - r * 0.3}" y1="${cy - r * 0.4}" x2="${cxc + r * 0.1}" y2="${cy - r * 0.8}" stroke="#92400E" stroke-width="1.5" stroke-linecap="round"/>`;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const cx = 14 + c * (W / cols > 32 ? 32 : W / cols);
+            const cy = 28 + r * 32;
+            const cxc = 14 + c * ((W - 20) / cols) + (W - 20) / cols / 2;
+            if (cols <= 8) {
+                out += `<circle cx="${cxc}" cy="${cy}" r="10" fill="#F59E0B" stroke="#D97706" stroke-width="1.2"/>`;
+                out += `<line x1="${cxc - 3}" y1="${cy - 4}" x2="${cxc + 1}" y2="${cy - 8}" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/>`;
+            }
         }
     }
     out += '</svg>';
@@ -139,7 +137,7 @@ function eqScaleSVG(leftExpr, rightVal) {
         <text x="70" y="63" text-anchor="middle" font-size="14" fill="#1E293B" font-weight="800">${leftExpr}</text>
         <!-- right cup -->
         <path d="M140 50 L150 70 L190 70 L200 50 Z" fill="#FEF3C7" stroke="#FBBF24" stroke-width="1.5"/>
-        <text x="170" y="63" text-anchor="middle" font-size="14" fill="#92400E" font-weight="800">${rightVal}</text>
+        <text x="170" y="63" text-anchor="middle" font-size="14" fill="#92400E" font-weight="800">?</text>
     </svg>`;
     return svg;
 }
@@ -623,12 +621,11 @@ export function generateFracLesson() {
     // 3. Выбор
     {
         const num = rnd(2, 6); const den = num * rnd(2, 4);
-        const g = gcd(num, den);
-        const reducedNum = num / g; const reducedDen = den / g;
+        const reducedNum = 1; const reducedDen = den / num;
         t.push(choiceT('🎯', 'Выбор', 'badge-choice',
             `Сократи дробь: ${num}/${den}`,
             `${reducedNum}/${reducedDen}`,
-            `Делим числитель и знаменатель на ${g} → ${reducedNum}/${reducedDen}`));
+            `Делим числитель и знаменатель на ${num} → ${reducedNum}/${reducedDen}`));
     }
     // 4. Парное
     {

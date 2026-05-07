@@ -10,7 +10,6 @@ import { renderSkillTree } from './skillTree.js';
 import { updateTrapsBadge } from './trap.js';
 import { updateStats, showAchievementToast } from '../app.js';
 import { playSound, spawnLeaves } from '../sounds.js';
-import { onCorrectAnswer, onWrongAnswer, onLessonComplete } from './pet.js';
 
 const LESSON_STORAGE_KEY = STORAGE_KEY + '_lesson_progress';
 let stepHistory = [];
@@ -127,11 +126,6 @@ export function startLesson(skillId) {
 }
 
 export async function closeLesson() {
-    if (state.currentLesson && state.lessonTasks.length > 0) {
-        const confirmExit = confirm('🐱 Ты уверен, что хочешь выйти из урока?\n\nПрогресс текущего урока будет потерян.');
-        if (!confirmExit) return;
-    }
-    clearLessonProgress();
     $('#lessonOverlay').classList.remove('active');
     state.currentLesson = null; state.lessonTasks = []; stepHistory = [];
     renderSkillTree();
@@ -172,14 +166,8 @@ async function renderLessonStep() {
         stepHistory[state.lessonStep] = result.isCorrect ? 'correct' : 'wrong';
     }
 
-    if (result.isCorrect) {
-        state.lessonCorrect++;
-        onCorrectAnswer();
-    } else {
-        state.lessonWrong++;
-        addLessonTrap(task);
-        onWrongAnswer();
-    }
+    if (result.isCorrect) { state.lessonCorrect++; }
+    else { state.lessonWrong++; addLessonTrap(task); }
 
     renderDots(); updateProgressBar(); saveLessonProgress();
     setTimeout(() => $('#lessonNextBtn').classList.add('show'), 1000);
@@ -248,7 +236,6 @@ function finishLesson() {
     unlockAchievement('student', (n, d) => showAchievementToast(n, d));
     if (w === 0) unlockAchievement('master', (n, d) => showAchievementToast(n, d));
     playSound(w === 0 ? 'achievement' : 'correct', state.theme);
-    onLessonComplete();
 
     const skill = getCurrentSkills().find(s => s.id === state.lessonSkillId);
     if (skill) {

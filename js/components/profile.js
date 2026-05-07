@@ -4,7 +4,6 @@ import { $, $$, showToast } from '../utils.js';
 import { state, resetAllProgress, applyTheme, saveState, checkThemeUnlocks } from '../state.js';
 import { SUBJECTS, THEMES, countCompletedLessons, CAT_SPEECH } from '../config.js';
 import { renderSkillTree } from './skillTree.js';
-import { renderPet } from './pet.js';
 import { updateStats } from '../app.js';
 
 export function renderProfile() {
@@ -17,7 +16,8 @@ export function renderProfile() {
 
     let html = `
     <div class="profile-hero">
-        <div class="profile-name">🐱 Кот Учёный</div>
+        <div class="profile-avatar">${im ? '🐱' : '😺'}</div>
+        <div class="profile-name">Кот Учёный</div>
         <div class="profile-role">${im ? 'Математик' : 'Филолог'} · Уровень ${totalLessons + 1}</div>
         <div class="profile-stats-row">
             <div class="profile-stat-card">
@@ -42,9 +42,6 @@ export function renderProfile() {
             </div>
         </div>
     </div>
-
-    <!-- Питомец (свой dom-контейнер для renderPet) -->
-    <div id="petPanel"></div>
 
     <div class="profile-section">
         <div class="profile-section-title">
@@ -93,9 +90,6 @@ export function renderProfile() {
 
     $('#profileContent').innerHTML = html;
 
-    // Рендерим питомца в отведённый контейнер
-    renderPet('petPanel');
-
     // Переключение тем
     $$('.theme-card').forEach(card => {
         card.addEventListener('click', () => {
@@ -112,19 +106,19 @@ export function renderProfile() {
             $$('.theme-card').forEach(c => c.classList.remove('active'));
             card.classList.add('active');
             // Обновляем шапку под текущий предмет
-            const im2 = state.subject === SUBJECTS.MATH;
+            const im = state.subject === SUBJECTS.MATH;
             const headerBar = document.getElementById('headerBar');
             const catStage = document.getElementById('catStage');
-            if (headerBar) headerBar.className = 'header ' + (im2 ? 'math-header' : 'rus-header');
-            if (catStage) catStage.className = 'cat-stage ' + (im2 ? 'math-stage' : 'rus-stage');
+            if (headerBar) headerBar.className = 'header ' + (im ? 'math-header' : 'rus-header');
+            if (catStage) catStage.className = 'cat-stage ' + (im ? 'math-stage' : 'rus-stage');
             const btnMath = document.getElementById('btnMath');
             const btnRus = document.getElementById('btnRus');
-            if (btnMath) btnMath.classList.toggle('active', im2);
-            if (btnRus) btnRus.classList.toggle('active', !im2);
+            if (btnMath) btnMath.classList.toggle('active', im);
+            if (btnRus) btnRus.classList.toggle('active', !im);
             const appEl = document.getElementById('app');
-            if (appEl) appEl.className = 'app' + (im2 ? '' : ' rus-mode');
+            if (appEl) appEl.className = 'app' + (im ? '' : ' rus-mode');
             const catSpeech = document.getElementById('catSpeech');
-            if (catSpeech) catSpeech.textContent = im2 ? CAT_SPEECH.math : CAT_SPEECH.russian;
+            if (catSpeech) catSpeech.textContent = im ? CAT_SPEECH.math : CAT_SPEECH.russian;
         });
     });
 
@@ -142,14 +136,9 @@ export function renderProfile() {
                 if (catSpeech) catSpeech.textContent = 'Мур! Начинаем заново!';
                 if (catBody) catBody.textContent = '🐱';
                 if (catAvatar) catAvatar.textContent = '🐱';
-                const headerBar = document.getElementById('headerBar');
-                const catStage = document.getElementById('catStage');
-                const appEl = document.getElementById('app');
-                if (headerBar) headerBar.className = 'header math-header';
-                if (catStage) catStage.className = 'cat-stage math-stage';
-                if (appEl) appEl.classList.remove('rus-mode');
-                // Сбрасываем дату последнего визита для streak
-                localStorage.removeItem('kot_ucheniy_last_visit');
+                document.getElementById('headerBar').className = 'header math-header';
+                document.getElementById('catStage').className = 'cat-stage math-stage';
+                document.getElementById('app').classList.remove('rus-mode');
             }
         }
     });

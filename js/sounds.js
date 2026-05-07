@@ -1,15 +1,11 @@
 // js/sounds.js
 
-let _ctx = null;
-
 function getCtx() {
-    if (_ctx) return _ctx;
     try {
-        _ctx = new (window.AudioContext || window.webkitAudioContext)();
+        return new (window.AudioContext || window.webkitAudioContext)();
     } catch (e) {
-        _ctx = null;
+        return null;
     }
-    return _ctx;
 }
 
 function playCorrectSound() {

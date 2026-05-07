@@ -192,17 +192,9 @@ function renderInput(container, task, explEl, resolve, isBonus, compact) {
         input.disabled = true;
         
         const correctStr = String(task.correctAns).toLowerCase();
-        // Убираем пробелы для сравнения чисел с запятой (например "12,16" vs "12, 16")
-        const cleanValue = value.replace(/\s+/g, '');
-        const cleanCorrect = correctStr.replace(/\s+/g, '');
-        let isCorrect = (cleanValue === cleanCorrect);
-        // Дополнительно: если ответ типа "периметр,площадь" — проверяем оба числа
-        if (!isCorrect && cleanCorrect.includes(',')) {
-            const correctParts = cleanCorrect.split(',');
-            const valueParts = cleanValue.split(',');
-            if (correctParts.length === valueParts.length) {
-                isCorrect = correctParts.every((cp, i) => cp === valueParts[i]);
-            }
+        let isCorrect = (value === correctStr);
+        if (!isCorrect && correctStr.includes(',')) {
+            isCorrect = value === correctStr.replace(/\s+/g, '');
         }
         
         if (isCorrect) {

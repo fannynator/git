@@ -1,4 +1,4 @@
-import { STORAGE_KEY, ACHIEVEMENTS_DEF, MATH_SKILLS, RUS_SKILLS, SUBJECTS, GEMS, TRAP, DEFAULT_THEME, THEMES, PET_SKINS, PET_ACCESSORIES, getTheme, countCompletedLessons } from './config.js';
+import { STORAGE_KEY, ACHIEVEMENTS_DEF, MATH_SKILLS, RUS_SKILLS, SUBJECTS, GEMS, TRAP, DEFAULT_THEME, THEMES, getTheme, countCompletedLessons } from './config.js';
 
 export const state = {
     subject: SUBJECTS.MATH, streak: 7, gems: 245, totalPets: 0,
@@ -12,13 +12,7 @@ export const state = {
     currentLesson: null, lessonStep: 0, lessonTasks: [], lessonCorrect: 0, lessonWrong: 0, lessonSkillId: null,
     currentStory: null, storyStep: 0, storyAnswered: false,
     subjectSwitches: 0,
-    theme: DEFAULT_THEME,
-    petSkin: 'classic',
-    petAccessories: { hat: 'none', eyes: 'no_glasses', neck: 'no_neck' },
-    petOwnedSkins: ['classic'],
-    petOwnedAccessories: ['none', 'no_glasses', 'no_neck'],
-    petRotation: 0,
-    gameScores: {}
+    theme: DEFAULT_THEME
 };
 
 export const saveState = () => {
@@ -27,13 +21,7 @@ export const saveState = () => {
         storiesCompleted: state.storiesCompleted, traps: state.traps,
         achievements: state.achievements, totalPets: state.totalPets,
         subject: state.subject, subjectSwitches: state.subjectSwitches,
-        theme: state.theme,
-        petSkin: state.petSkin,
-        petAccessories: state.petAccessories,
-        petOwnedSkins: state.petOwnedSkins,
-        petOwnedAccessories: state.petOwnedAccessories,
-        petRotation: state.petRotation,
-        gameScores: state.gameScores
+        theme: state.theme
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 };
@@ -44,20 +32,8 @@ export const loadState = () => {
     try {
         const data = JSON.parse(saved);
         if (data.skills) {
-            // Мёржим сохранённые навыки поверх дефолтных —
-            // новые навыки из конфига не теряются
-            [SUBJECTS.MATH, SUBJECTS.RUSSIAN].forEach(subj => {
-                const saved = data.skills[subj];
-                if (saved) {
-                    const defaults = state.skills[subj];
-                    for (const key of Object.keys(saved)) {
-                        if (defaults[key]) {
-                            defaults[key].completed = saved[key]?.completed ?? defaults[key].completed;
-                            defaults[key].score = saved[key]?.score ?? defaults[key].score;
-                        }
-                    }
-                }
-            });
+            state.skills[SUBJECTS.MATH] = data.skills[SUBJECTS.MATH] || state.skills[SUBJECTS.MATH];
+            state.skills[SUBJECTS.RUSSIAN] = data.skills[SUBJECTS.RUSSIAN] || state.skills[SUBJECTS.RUSSIAN];
         }
         if (data.gems !== undefined) state.gems = data.gems;
         if (data.streak !== undefined) state.streak = data.streak;
@@ -70,12 +46,6 @@ export const loadState = () => {
         if (data.subject) state.subject = data.subject;
         if (data.subjectSwitches !== undefined) state.subjectSwitches = data.subjectSwitches;
         if (data.theme) state.theme = data.theme;
-        if (data.petSkin) state.petSkin = data.petSkin;
-        if (data.petAccessories) state.petAccessories = data.petAccessories;
-        if (data.petOwnedSkins) state.petOwnedSkins = data.petOwnedSkins;
-        if (data.petOwnedAccessories) state.petOwnedAccessories = data.petOwnedAccessories;
-        if (data.petRotation !== undefined) state.petRotation = data.petRotation;
-        if (data.gameScores) state.gameScores = data.gameScores;
     } catch (e) { console.warn('Ошибка загрузки:', e); }
 };
 
@@ -113,12 +83,6 @@ export const resetAllProgress = () => {
     state.traps = []; state.achievements = JSON.parse(JSON.stringify(ACHIEVEMENTS_DEF));
     state.subject = SUBJECTS.MATH;
     state.theme = DEFAULT_THEME;
-    state.petSkin = 'classic';
-    state.petAccessories = { hat: 'none', eyes: 'no_glasses', neck: 'no_neck' };
-    state.petOwnedSkins = ['classic'];
-    state.petOwnedAccessories = ['none', 'no_glasses', 'no_neck'];
-    state.petRotation = 0;
-    state.gameScores = {};
     localStorage.removeItem(STORAGE_KEY);
     applyTheme(DEFAULT_THEME);
 };
