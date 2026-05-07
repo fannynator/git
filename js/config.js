@@ -9,7 +9,7 @@ export const GEMS = {
     TRAP_DEFUSE_MULTIPLIER: 3, STORY_MATH_REWARD: 40, STORY_RUS_REWARD: 50
 };
 
-export const TRAP = { MAX_DEFUSES: 4, DELAY_SLOTS: [1, 3, 7, 14] };
+export const TRAP = { MAX_DEFUSES: 1, DELAY_SLOTS: [1, 3, 7, 14] };
 export const SKILL = { PROGRESS_TO_COMPLETE: 100 };
 
 export const ACHIEVEMENTS_DEF = {
@@ -55,3 +55,90 @@ export const CAT_SPEECH = {
 };
 
 export const SUBJECT_EMOJI = { math: '🐱', russian: '😺' };
+
+export const DEFAULT_THEME = 'light';
+
+export const THEMES = {
+    light: {
+        id: 'light', name: '☀️ Солнечная', catEmoji: '🐱',
+        bg: '#F8FAFC', card: '#FFFFFF', text: '#1E293B', textLight: '#94A3B8',
+        primary: '#3B82F6', accent: '#F59E0B',
+        gradient: 'linear-gradient(135deg, #E2E8F0 0%, #F1F5F9 50%, #E8EDF2 100%)',
+        bgEffect: 'sunlight', unlocked: true
+    },
+    dark: {
+        id: 'dark', name: '🌙 Ночная', catEmoji: '🐈‍⬛',
+        bg: '#0F172A', card: '#1E293B', text: '#F1F5F9', textLight: '#94A3B8',
+        primary: '#818CF8', accent: '#FBBF24',
+        gradient: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+        bgEffect: 'stars', unlocked: true
+    },
+    forest: {
+        id: 'forest', name: '🌲 Лес', catEmoji: '🐱',
+        bg: '#F0FDF4', card: '#FFFFFF', text: '#14532D', textLight: '#65A30D',
+        primary: '#16A34A', accent: '#CA8A04',
+        gradient: 'linear-gradient(135deg, #DCFCE7 0%, #F0FDF4 50%, #ECFCCB 100%)',
+        bgEffect: 'leaves', unlocked: false, unlockAt: 3
+    },
+    space: {
+        id: 'space', name: '🚀 Космос', catEmoji: '🐱',
+        bg: '#0A0A1A', card: '#1A1A3E', text: '#E2E8F0', textLight: '#818CF8',
+        primary: '#A855F7', accent: '#06B6D4',
+        gradient: 'linear-gradient(135deg, #0A0A1A 0%, #1A1A3E 100%)',
+        bgEffect: 'nebula', unlocked: false, unlockAt: 7
+    },
+    underwater: {
+        id: 'underwater', name: '🌊 Под водой', catEmoji: '🐱',
+        bg: '#E0F2FE', card: '#FFFFFF', text: '#0C4A6E', textLight: '#0284C7',
+        primary: '#0EA5E9', accent: '#F97316',
+        gradient: 'linear-gradient(135deg, #BAE6FD 0%, #E0F2FE 50%, #7DD3FC 100%)',
+        bgEffect: 'bubbles', unlocked: false, unlockAt: 12
+    }
+};
+
+export const getTheme = (id) => THEMES[id] || THEMES[DEFAULT_THEME];
+
+/** Сколько уроков пройдено (completed skills) */
+export const countCompletedLessons = (skills) => {
+    if (!skills) return 0;
+    return Object.values(skills).filter(s => s && s.progress >= 100).length;
+};
+
+// ========== ПИТОМЕЦ: СКИНЫ И АКСЕССУАРЫ ==========
+
+export const PET_SKINS = {
+    classic:  { id: 'classic',  emoji: '🐱', name: 'Классик',    desc: 'Рыжий кот',       cost: 0,   unlocked: true,
+        lottieIdle: 'assets/lottie/cat_idle.json', lottieHappy: 'assets/lottie/cat_happy.json',
+        lottieSad: 'assets/lottie/cat_sad.json', lottieExcited: 'assets/lottie/cat_excited.json' },
+    tuxedo:   { id: 'tuxedo',   emoji: '🐈‍⬛', name: 'Смокинг',   desc: 'Чёрный кот',      cost: 30,  unlocked: false,
+        lottieIdle: 'assets/lottie/cat_idle.json', lottieHappy: 'assets/lottie/cat_happy.json',
+        lottieSad: 'assets/lottie/cat_sad.json', lottieExcited: 'assets/lottie/cat_excited.json' },
+    siamese:  { id: 'siamese',  emoji: '😺', name: 'Сиам',       desc: 'Улыбчивый кот',   cost: 50,  unlocked: false,
+        lottieIdle: 'assets/lottie/cat_idle.json', lottieHappy: 'assets/lottie/cat_happy.json',
+        lottieSad: 'assets/lottie/cat_sad.json', lottieExcited: 'assets/lottie/cat_excited.json' },
+    galaxy:   { id: 'galaxy',   emoji: '🐱', name: 'Галактика',  desc: 'Космический кот', cost: 80,  unlocked: false,
+        lottieIdle: 'assets/lottie/cat_idle.json', lottieHappy: 'assets/lottie/cat_happy.json',
+        lottieSad: 'assets/lottie/cat_sad.json', lottieExcited: 'assets/lottie/cat_excited.json' },
+    ghost:    { id: 'ghost',    emoji: '🙀', name: 'Призрак',    desc: 'Испуганный кот',  cost: 100, unlocked: false,
+        lottieIdle: 'assets/lottie/cat_idle.json', lottieHappy: 'assets/lottie/cat_happy.json',
+        lottieSad: 'assets/lottie/cat_sad.json', lottieExcited: 'assets/lottie/cat_excited.json' },
+    royal:    { id: 'royal',    emoji: '😻', name: 'Король',     desc: 'Влюблённый кот',  cost: 120, unlocked: false,
+        lottieIdle: 'assets/lottie/cat_idle.json', lottieHappy: 'assets/lottie/cat_happy.json',
+        lottieSad: 'assets/lottie/cat_sad.json', lottieExcited: 'assets/lottie/cat_excited.json' }
+};
+
+export const PET_ACCESSORIES = {
+    none:       { id: 'none',       emoji: '❌', name: 'Ничего',     slot: 'hat',    cost: 0,   unlocked: true },
+    wizard:     { id: 'wizard',     emoji: '🎩', name: 'Волшебник',  slot: 'hat',    cost: 25,  unlocked: false },
+    crown:      { id: 'crown',      emoji: '👑', name: 'Корона',     slot: 'hat',    cost: 40,  unlocked: false },
+    cap:        { id: 'cap',        emoji: '🧢', name: 'Кепка',      slot: 'hat',    cost: 15,  unlocked: false },
+    flower:     { id: 'flower',     emoji: '🌸', name: 'Цветок',     slot: 'hat',    cost: 20,  unlocked: false },
+    no_glasses: { id: 'no_glasses', emoji: '❌', name: 'Без очков',  slot: 'eyes',   cost: 0,   unlocked: true },
+    glasses:    { id: 'glasses',    emoji: '👓', name: 'Очки',       slot: 'eyes',   cost: 20,  unlocked: false },
+    cool:       { id: 'cool',       emoji: '🕶️', name: 'Крутые',    slot: 'eyes',   cost: 35,  unlocked: false },
+    monocle:    { id: 'monocle',    emoji: '🧐', name: 'Монокль',    slot: 'eyes',   cost: 50,  unlocked: false },
+    no_neck:    { id: 'no_neck',    emoji: '❌', name: 'Ничего',     slot: 'neck',   cost: 0,   unlocked: true },
+    bowtie:     { id: 'bowtie',     emoji: '🎀', name: 'Бабочка',    slot: 'neck',   cost: 25,  unlocked: false },
+    tie:        { id: 'tie',        emoji: '👔', name: 'Галстук',    slot: 'neck',   cost: 30,  unlocked: false },
+    scarf:      { id: 'scarf',      emoji: '🧣', name: 'Шарф',       slot: 'neck',   cost: 20,  unlocked: false }
+};

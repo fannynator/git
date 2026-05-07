@@ -2,10 +2,10 @@ import { $ } from '../utils.js';
 import { TUTORIAL_KEY } from '../config.js';
 
 const steps = [
-    { emoji: '🐱', title: 'Добро пожаловать!', text: 'Я Кот Учёный. Давай учиться! Нажимай на доступный навык, чтобы начать урок.' },
-    { emoji: '🧮', title: 'Два предмета', text: 'Ты можешь переключаться между математикой и русским языком. Кнопки — в шапке.' },
-    { emoji: '🪤', title: 'Ловушки', text: 'Ошибки создают ловушки. Возвращайся и обезвреживай их — получишь бонусы!' },
-    { emoji: '🐱', title: 'Погладь меня!', text: 'Нажми на кота на главном экране. Чем больше гладишь — тем я счастливее!' }
+    { emoji: '🐱', title: 'Добро пожаловать!', text: 'Я Кот Учёный. Нажимай на доступный навык, чтобы начать урок.' },
+    { emoji: '🧮', title: 'Два предмета', text: 'Переключайся между математикой и русским в шапке.' },
+    { emoji: '🪤', title: 'Ловушки', text: 'Ошибки создают ловушки. Обезвреживай их и получай бонусы!' },
+    { emoji: '🐱', title: 'Погладь меня!', text: 'Нажми на кота — я мурчу и даю достижения!' }
 ];
 
 export function startTutorial() {
@@ -24,21 +24,11 @@ export function startTutorial() {
         overlay.classList.add('active');
     };
     
-    const close = () => {
-        overlay.classList.remove('active');
-        localStorage.setItem(TUTORIAL_KEY, '1');
-    };
+    const close = () => { overlay.classList.remove('active'); localStorage.setItem(TUTORIAL_KEY, '1'); };
     
-    $('#tutNext').addEventListener('click', () => {
-        step++;
-        if (step >= steps.length) close();
-        else render();
-    });
-    
+    $('#tutNext').addEventListener('click', () => { step++; if (step >= steps.length) close(); else render(); });
     $('#tutSkip').addEventListener('click', close);
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) close();
-    });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
     
     render();
 }

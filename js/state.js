@@ -1,4 +1,4 @@
-import { STORAGE_KEY, ACHIEVEMENTS_DEF, MATH_SKILLS, RUS_SKILLS, SUBJECTS, GEMS, TRAP } from './config.js';
+import { STORAGE_KEY, ACHIEVEMENTS_DEF, MATH_SKILLS, RUS_SKILLS, SUBJECTS, GEMS, TRAP, DEFAULT_THEME, THEMES, PET_SKINS, PET_ACCESSORIES, getTheme, countCompletedLessons } from './config.js';
 
 export const state = {
     subject: SUBJECTS.MATH, streak: 7, gems: 245, totalPets: 0,
@@ -10,9 +10,15 @@ export const state = {
         [SUBJECTS.RUSSIAN]: JSON.parse(JSON.stringify(RUS_SKILLS))
     },
     currentLesson: null, lessonStep: 0, lessonTasks: [], lessonCorrect: 0, lessonWrong: 0, lessonSkillId: null,
-    _bonusAdded: false, _wrongTasks: [], _bonusCorrect: 0,
     currentStory: null, storyStep: 0, storyAnswered: false,
-    subjectSwitches: 0
+    subjectSwitches: 0,
+    theme: DEFAULT_THEME,
+    petSkin: 'classic',
+    petAccessories: { hat: 'none', eyes: 'no_glasses', neck: 'no_neck' },
+    petOwnedSkins: ['classic'],
+    petOwnedAccessories: ['none', 'no_glasses', 'no_neck'],
+    petRotation: 0,
+    gameScores: {}
 };
 
 export const saveState = () => {
@@ -20,7 +26,14 @@ export const saveState = () => {
         skills: state.skills, gems: state.gems, streak: state.streak,
         storiesCompleted: state.storiesCompleted, traps: state.traps,
         achievements: state.achievements, totalPets: state.totalPets,
-        subject: state.subject, subjectSwitches: state.subjectSwitches
+        subject: state.subject, subjectSwitches: state.subjectSwitches,
+        theme: state.theme,
+        petSkin: state.petSkin,
+        petAccessories: state.petAccessories,
+        petOwnedSkins: state.petOwnedSkins,
+        petOwnedAccessories: state.petOwnedAccessories,
+        petRotation: state.petRotation,
+        gameScores: state.gameScores
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 };
@@ -31,23 +44,38 @@ export const loadState = () => {
     try {
         const data = JSON.parse(saved);
         if (data.skills) {
-            state.skills[SUBJECTS.MATH] = data.skills[SUBJECTS.MATH] || state.skills[SUBJECTS.MATH];
-            state.skills[SUBJECTS.RUSSIAN] = data.skills[SUBJECTS.RUSSIAN] || state.skills[SUBJECTS.RUSSIAN];
+            // Мёржим сохранённые навыки поверх дефолтных —
+            // новые навыки из конфига не теряются
+            [SUBJECTS.MATH, SUBJECTS.RUSSIAN].forEach(subj => {
+                const saved = data.skills[subj];
+                if (saved) {
+                    const defaults = state.skills[subj];
+                    for (const key of Object.keys(saved)) {
+                        if (defaults[key]) {
+                            defaults[key].completed = saved[key]?.completed ?? defaults[key].completed;
+                            defaults[key].score = saved[key]?.score ?? defaults[key].score;
+                        }
+                    }
+                }
+            });
         }
         if (data.gems !== undefined) state.gems = data.gems;
         if (data.streak !== undefined) state.streak = data.streak;
         if (data.storiesCompleted) state.storiesCompleted = { ...state.storiesCompleted, ...data.storiesCompleted };
         if (data.traps) state.traps = data.traps;
-        if (data.achievements) {
-            Object.keys(data.achievements).forEach(key => {
-                if (state.achievements[key] && data.achievements[key].unlocked) {
-                    state.achievements[key].unlocked = true;
-                }
-            });
-        }
+        if (data.achievements) Object.keys(data.achievements).forEach(key => {
+            if (state.achievements[key] && data.achievements[key].unlocked) state.achievements[key].unlocked = true;
+        });
         if (data.totalPets !== undefined) state.totalPets = data.totalPets;
         if (data.subject) state.subject = data.subject;
         if (data.subjectSwitches !== undefined) state.subjectSwitches = data.subjectSwitches;
+        if (data.theme) state.theme = data.theme;
+        if (data.petSkin) state.petSkin = data.petSkin;
+        if (data.petAccessories) state.petAccessories = data.petAccessories;
+        if (data.petOwnedSkins) state.petOwnedSkins = data.petOwnedSkins;
+        if (data.petOwnedAccessories) state.petOwnedAccessories = data.petOwnedAccessories;
+        if (data.petRotation !== undefined) state.petRotation = data.petRotation;
+        if (data.gameScores) state.gameScores = data.gameScores;
     } catch (e) { console.warn('Ошибка загрузки:', e); }
 };
 
@@ -56,58 +84,83 @@ export const getCurrentSkills = () => state.skills[state.subject];
 export const unlockAchievement = (id, onUnlock) => {
     const ach = state.achievements[id];
     if (!ach || ach.unlocked) return false;
-    ach.unlocked = true;
-    state.gems += GEMS.ACHIEVEMENT_REWARD;
-    saveState();
-    if (onUnlock) {
-        onUnlock(ach.name, ach.desc);
-    }
+    ach.unlocked = true; state.gems += GEMS.ACHIEVEMENT_REWARD; saveState();
+    if (onUnlock) onUnlock(ach.name, ach.desc);
     return true;
 };
 
 export const checkAchievements = (onUnlock) => {
-    const done = (state.storiesCompleted.math ? 1 : 0) + (state.storiesCompleted.rus1 ? 1 : 0) + (state.storiesCompleted.rus2 ? 1 : 0);
-    const def = state.traps.reduce((s, t) => s + t.defuses, 0);
+    const done = (state.storiesCompleted.math?1:0)+(state.storiesCompleted.rus1?1:0)+(state.storiesCompleted.rus2?1:0);
+    const def = state.traps.reduce((s,t)=>s+t.defuses,0);
     const checks = {
-        detective: done >= 1,
-        sherlock: done >= 2,
-        holmes: done >= 3,
-        saper: def >= 1,
-        hunter: def >= 3,
-        murmur: state.totalPets >= 10,
-        firstBlood: state.traps.length > 0
+        detective: done>=1, sherlock: done>=2, holmes: done>=3,
+        saper: def>=1, hunter: def>=3, murmur: state.totalPets>=10, firstBlood: state.traps.length>0
     };
-    Object.entries(checks).forEach(([id, condition]) => {
-        if (condition && unlockAchievement(id, onUnlock)) {
-            // уже разблокировано внутри unlockAchievement
-        }
-    });
+    Object.entries(checks).forEach(([id,cond]) => { if(cond) unlockAchievement(id, onUnlock); });
 };
 
 export const getAvailableTraps = () => {
-    const now = new Date();
-    return state.traps.filter(t => t.defuses < TRAP.MAX_DEFUSES && new Date(t.nextDate) <= now && t.subject === state.subject);
+    return state.traps.filter(t=>t.defuses < TRAP.MAX_DEFUSES && t.subject === state.subject);
 };
 
-export const getLockedTraps = () => {
-    const now = new Date();
-    return state.traps.filter(t => t.defuses < TRAP.MAX_DEFUSES && new Date(t.nextDate) > now && t.subject === state.subject);
-};
-
-export const getDefusedTraps = () => state.traps.filter(t => t.defuses >= TRAP.MAX_DEFUSES && t.subject === state.subject);
-
-export const getTrapDelay = (defuses) => (TRAP.DELAY_SLOTS[defuses] || 14) * 86400000;
+export const getDefusedTraps = () => state.traps.filter(t=>t.defuses >= TRAP.MAX_DEFUSES && t.subject === state.subject);
 
 export const resetAllProgress = () => {
     state.skills[SUBJECTS.MATH] = JSON.parse(JSON.stringify(MATH_SKILLS));
     state.skills[SUBJECTS.RUSSIAN] = JSON.parse(JSON.stringify(RUS_SKILLS));
-    state.gems = 245;
-    state.streak = 7;
-    state.totalPets = 0;
-    state.subjectSwitches = 0;
+    state.gems = 245; state.streak = 7; state.totalPets = 0; state.subjectSwitches = 0;
     state.storiesCompleted = { math: false, rus1: false, rus2: false };
-    state.traps = [];
-    state.achievements = JSON.parse(JSON.stringify(ACHIEVEMENTS_DEF));
+    state.traps = []; state.achievements = JSON.parse(JSON.stringify(ACHIEVEMENTS_DEF));
     state.subject = SUBJECTS.MATH;
+    state.theme = DEFAULT_THEME;
+    state.petSkin = 'classic';
+    state.petAccessories = { hat: 'none', eyes: 'no_glasses', neck: 'no_neck' };
+    state.petOwnedSkins = ['classic'];
+    state.petOwnedAccessories = ['none', 'no_glasses', 'no_neck'];
+    state.petRotation = 0;
+    state.gameScores = {};
     localStorage.removeItem(STORAGE_KEY);
+    applyTheme(DEFAULT_THEME);
+};
+
+/** Применить тему к body и CSS-переменным */
+export const applyTheme = (themeId) => {
+    const t = getTheme(themeId);
+    if (!t) return;
+
+    // Убираем все старые theme-классы
+    Object.keys(THEMES).forEach(k => document.body.classList.remove('theme-' + k));
+    document.body.classList.add('theme-' + themeId);
+
+    // CSS-переменные
+    const root = document.documentElement;
+    root.style.setProperty('--bg', t.bg);
+    root.style.setProperty('--card', t.card);
+    root.style.setProperty('--text', t.text);
+    root.style.setProperty('--text-light', t.textLight);
+    root.style.setProperty('--theme-primary', t.primary);
+    root.style.setProperty('--theme-accent', t.accent);
+
+    // Обновляем фон body
+    document.body.style.background = t.gradient;
+    document.body.style.backgroundSize = '400% 400%';
+
+    // Эмодзи кота
+    const catBody = document.getElementById('catBody');
+    const catAvatar = document.getElementById('catAvatar');
+    if (catBody) catBody.textContent = t.catEmoji;
+    if (catAvatar) catAvatar.textContent = t.catEmoji;
+
+    // Сохраняем
+    state.theme = themeId;
+};
+
+/** Проверить и разблокировать темы по прогрессу */
+export const checkThemeUnlocks = () => {
+    const totalDone = countCompletedLessons(state.skills[SUBJECTS.MATH]) + countCompletedLessons(state.skills[SUBJECTS.RUSSIAN]);
+    Object.values(THEMES).forEach(t => {
+        if (!t.unlocked && t.unlockAt && totalDone >= t.unlockAt) {
+            t.unlocked = true;
+        }
+    });
 };

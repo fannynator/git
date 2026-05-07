@@ -1,20 +1,15 @@
 // js/components/taskRenderer.js
 
 import { $, $$ } from '../utils.js';
+import { state } from '../state.js';
 import { playSound } from '../sounds.js';
 
-/**
- * Универсальный рендерер заданий.
- * Вставляет задание в контейнер, обрабатывает ввод и возвращает Promise,
- * который разрешается объектом { isCorrect: boolean, isBonus: boolean } после ответа.
- */
 export function renderTask(container, task, options = {}) {
     const { isBonus = false, compact = false } = options;
     
     return new Promise((resolve) => {
         container.innerHTML = '';
         
-        // Эмодзи задания
         if (task.emoji) {
             const emojiEl = document.createElement('div');
             emojiEl.className = compact ? 'scene-emoji' : 'lesson-emoji';
@@ -22,7 +17,6 @@ export function renderTask(container, task, options = {}) {
             container.appendChild(emojiEl);
         }
         
-        // Бейдж (только для уроков, не для историй)
         if (task.badge && !compact) {
             const badgeEl = document.createElement('div');
             badgeEl.className = `lesson-type-badge ${task.badgeClass || ''}`;
@@ -30,33 +24,86 @@ export function renderTask(container, task, options = {}) {
             container.appendChild(badgeEl);
         }
         
-        // Вопрос
         const questionEl = document.createElement('div');
         questionEl.className = compact ? 'scene-text' : 'lesson-question';
         if (task.question) questionEl.textContent = task.question;
         container.appendChild(questionEl);
         
-        // Поле для объяснения (скрыто по умолчанию)
         const explanationEl = document.createElement('div');
         explanationEl.className = compact ? 'explanation-box' : 'lesson-explanation';
         container.appendChild(explanationEl);
         
-        // Выбираем тип задания
-        if (task.type === 'choice') {
-            renderChoice(container, task, explanationEl, resolve, isBonus, compact);
-        } else if (task.type === 'input') {
-            renderInput(container, task, explanationEl, resolve, isBonus, compact);
-        } else if (task.type === 'pair') {
-            renderPair(container, task, explanationEl, resolve, isBonus, compact);
-        } else if (task.type && task.type.startsWith('boss')) {
-            renderBoss(container, task, explanationEl, resolve, isBonus);
-        }
+    if (task.type === 'visual') {
+        renderVisual(container, task, explanationEl, resolve, isBonus, compact);
+    } else if (task.type === 'choice') {
+        renderChoice(container, task, explanationEl, resolve, isBonus, compact);
+    } else if (task.type === 'input') {
+        renderInput(container, task, explanationEl, resolve, isBonus, compact);
+    } else if (task.type === 'pair') {
+        renderPair(container, task, explanationEl, resolve, isBonus, compact);
+    } else if (task.type && task.type.startsWith('boss')) {
+        renderBoss(container, task, explanationEl, resolve, isBonus);
+    }
     });
 }
 
-/**
- * Задание с выбором варианта
- */
+function renderVisual(container, task, explEl, resolve, isBonus, compact) {
+    // SVG-иллюстрация
+    const svgWrapper = document.createElement('div');
+    svgWrapper.className = 'visual-svg-wrapper';
+    svgWrapper.innerHTML = task.svg;
+    svgWrapper.style.cssText = 'width:100%;max-width:280px;margin:0 auto 8px;text-align:center;';
+    container.appendChild(svgWrapper);
+
+    const optsClass = compact ? 'task-options' : 'lesson-options';
+    const optClass = compact ? 'task-option' : 'lesson-option';
+    
+    const optsDiv = document.createElement('div');
+    optsDiv.className = optsClass;
+    
+    const correctAnswer = task.correctAns;
+    
+    task.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = optClass;
+        btn.textContent = optText;
+        btn.dataset.idx = idx;
+        btn.dataset.value = String(optText);
+        
+        btn.addEventListener('click', () => {
+            optsDiv.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+            
+            const isCorrect = String(btn.dataset.value) === String(correctAnswer);
+            
+            if (isCorrect) {
+                playSound('correct', state.theme);
+                btn.classList.add('correct-pick');
+                btn.textContent = '✅ ' + optText;
+                explEl.innerHTML = '<span style="font-size:16px;">✅</span> ' + task.explanation;
+                explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show good';
+                setTimeout(() => resolve({ isCorrect: true, isBonus }), 400);
+            } else {
+                playSound('wrong', state.theme);
+                btn.classList.add('wrong-pick');
+                btn.textContent = '❌ ' + optText;
+                optsDiv.querySelectorAll('button').forEach(b => {
+                    if (String(b.dataset.value) === String(correctAnswer)) {
+                        b.classList.add('correct-pick');
+                        b.textContent = '✅ ' + b.dataset.value;
+                    }
+                });
+                explEl.innerHTML = '<span style="font-size:16px;">🤔</span> ' + task.explanation;
+                explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show bad';
+                setTimeout(() => resolve({ isCorrect: false, isBonus }), 600);
+            }
+        });
+        
+        optsDiv.appendChild(btn);
+    });
+    
+    container.appendChild(optsDiv);
+}
+
 function renderChoice(container, task, explEl, resolve, isBonus, compact) {
     const optsClass = compact ? 'task-options' : 'lesson-options';
     const optClass = compact ? 'task-option' : 'lesson-option';
@@ -79,33 +126,24 @@ function renderChoice(container, task, explEl, resolve, isBonus, compact) {
             const isCorrect = String(btn.dataset.value) === String(correctAnswer);
             
             if (isCorrect) {
-                playSound('correct');
+                playSound('correct', state.theme);
                 btn.classList.add('correct-pick');
-                // Добавляем иконку галочки
                 btn.textContent = '✅ ' + optText;
-                
                 explEl.innerHTML = '<span style="font-size:16px;">✅</span> ' + task.explanation;
                 explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show good';
-                
-                // Лёгкая задержка для анимации
                 setTimeout(() => resolve({ isCorrect: true, isBonus }), 400);
             } else {
-                playSound('wrong');
+                playSound('wrong', state.theme);
                 btn.classList.add('wrong-pick');
-                // Добавляем иконку крестика
                 btn.textContent = '❌ ' + optText;
-                
-                // Подсвечиваем правильный ответ
                 optsDiv.querySelectorAll('button').forEach(b => {
                     if (String(b.dataset.value) === String(correctAnswer)) {
                         b.classList.add('correct-pick');
                         b.textContent = '✅ ' + b.dataset.value;
                     }
                 });
-                
                 explEl.innerHTML = '<span style="font-size:16px;">🤔</span> ' + task.explanation;
                 explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show bad';
-                
                 setTimeout(() => resolve({ isCorrect: false, isBonus }), 600);
             }
         });
@@ -115,9 +153,7 @@ function renderChoice(container, task, explEl, resolve, isBonus, compact) {
     
     container.appendChild(optsDiv);
 }
-/**
- * Задание с текстовым вводом
- */
+
 function renderInput(container, task, explEl, resolve, isBonus, compact) {
     const rowDiv = document.createElement('div');
     rowDiv.className = compact ? 'task-input-row' : 'lesson-input-row';
@@ -126,7 +162,6 @@ function renderInput(container, task, explEl, resolve, isBonus, compact) {
     input.type = 'text';
     input.className = compact ? 'task-input' : 'lesson-input';
     
-    // Умный placeholder
     if (task.correctAns !== undefined && task.correctAns !== null) {
         const ansStr = String(task.correctAns).toLowerCase();
         if (ansStr === 'н' || ansStr === 'нн') input.placeholder = 'н/нн';
@@ -149,10 +184,7 @@ function renderInput(container, task, explEl, resolve, isBonus, compact) {
         if (!value) {
             input.style.borderColor = 'var(--red)';
             input.style.animation = 'shake 0.5s ease';
-            setTimeout(() => {
-                input.style.animation = '';
-                input.style.borderColor = 'rgba(255,255,255,0.2)';
-            }, 500);
+            setTimeout(() => { input.style.animation = ''; input.style.borderColor = 'rgba(255,255,255,0.2)'; }, 500);
             return;
         }
         
@@ -160,22 +192,28 @@ function renderInput(container, task, explEl, resolve, isBonus, compact) {
         input.disabled = true;
         
         const correctStr = String(task.correctAns).toLowerCase();
-        let isCorrect = (value === correctStr);
-        
-        // Особая обработка для босса геометрии (P и S через запятую)
-        if (!isCorrect && correctStr.includes(',')) {
-            isCorrect = value === correctStr.replace(/\s+/g, '');
+        // Убираем пробелы для сравнения чисел с запятой (например "12,16" vs "12, 16")
+        const cleanValue = value.replace(/\s+/g, '');
+        const cleanCorrect = correctStr.replace(/\s+/g, '');
+        let isCorrect = (cleanValue === cleanCorrect);
+        // Дополнительно: если ответ типа "периметр,площадь" — проверяем оба числа
+        if (!isCorrect && cleanCorrect.includes(',')) {
+            const correctParts = cleanCorrect.split(',');
+            const valueParts = cleanValue.split(',');
+            if (correctParts.length === valueParts.length) {
+                isCorrect = correctParts.every((cp, i) => cp === valueParts[i]);
+            }
         }
         
         if (isCorrect) {
-            playSound('correct');
+            playSound('correct', state.theme);
             input.style.borderColor = 'var(--green)';
             input.style.background = 'rgba(16,185,129,0.2)';
             explEl.textContent = '✅ ' + task.explanation;
             explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show good';
             resolve({ isCorrect: true, isBonus });
         } else {
-            playSound('wrong');
+            playSound('wrong', state.theme);
             input.style.borderColor = 'var(--red)';
             input.style.background = 'rgba(239,68,68,0.15)';
             explEl.textContent = '🤔 ' + task.explanation + ' ✅ ' + task.correctAns;
@@ -185,18 +223,13 @@ function renderInput(container, task, explEl, resolve, isBonus, compact) {
     };
     
     btn.addEventListener('click', submit);
-    input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') submit();
-    });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
     
     rowDiv.appendChild(input);
     rowDiv.appendChild(btn);
     container.appendChild(rowDiv);
 }
 
-/**
- * Задание на составление пар
- */
 function renderPair(container, task, explEl, resolve, isBonus, compact) {
     const grid = document.createElement('div');
     grid.className = 'pair-grid';
@@ -215,7 +248,6 @@ function renderPair(container, task, explEl, resolve, isBonus, compact) {
     
     let selectedLeft = null;
     let matchedCount = 0;
-    let totalAttempts = 0;
     const total = task.pairs.length;
     
     shuffledLeft.forEach(item => {
@@ -258,10 +290,9 @@ function renderPair(container, task, explEl, resolve, isBonus, compact) {
             if (!selectedLeft) return;
             
             const rightIdx = parseInt(btn.dataset.pairIdx);
-            totalAttempts++;
             
             if (selectedLeft.idx === rightIdx) {
-                playSound('correct');
+                playSound('correct', state.theme);
                 selectedLeft.el.classList.add('matched');
                 btn.classList.add('matched');
                 matchedCount++;
@@ -269,12 +300,12 @@ function renderPair(container, task, explEl, resolve, isBonus, compact) {
                 allLeftBtns.forEach(b => b.classList.remove('selected'));
                 
                 if (matchedCount >= total) {
-                    explEl.textContent = '✅ ' + (task.explanation || 'Все пары соединены верно!');
+                    explEl.textContent = '✅ ' + (task.explanation || 'Все пары верны!');
                     explEl.className = (compact ? 'explanation-box' : 'lesson-explanation') + ' show good';
                     resolve({ isCorrect: true, isBonus });
                 }
             } else {
-                playSound('wrong');
+                playSound('wrong', state.theme);
                 btn.classList.add('wrong-flash');
                 setTimeout(() => btn.classList.remove('wrong-flash'), 500);
                 selectedLeft.el.classList.remove('selected');
@@ -289,15 +320,12 @@ function renderPair(container, task, explEl, resolve, isBonus, compact) {
     container.appendChild(hint);
 }
 
-/**
- * Задание типа "Босс" (несколько полей ввода)
- */
 function renderBoss(container, task, explEl, resolve, isBonus) {
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex;flex-direction:column;gap:8px;width:100%;';
     
     const inputs = [];
-    task.words.forEach((w, wi) => {
+    task.words.forEach((w) => {
         const row = document.createElement('div');
         row.className = 'boss-row';
         
@@ -348,12 +376,12 @@ function renderBoss(container, task, explEl, resolve, isBonus) {
         inputs.forEach(({ input }) => input.disabled = true);
         
         if (allOk) {
-            playSound('correct');
+            playSound('correct', state.theme);
             explEl.textContent = '✅ ' + task.explanation;
             explEl.className = 'lesson-explanation show good';
             resolve({ isCorrect: true, isBonus });
         } else {
-            playSound('wrong');
+            playSound('wrong', state.theme);
             explEl.textContent = '🤔 ' + task.explanation;
             explEl.className = 'lesson-explanation show bad';
             resolve({ isCorrect: false, isBonus });
@@ -361,9 +389,7 @@ function renderBoss(container, task, explEl, resolve, isBonus) {
     });
     
     inputs.forEach(({ input }) => {
-        input.addEventListener('keydown', e => {
-            if (e.key === 'Enter') submitBtn.click();
-        });
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') submitBtn.click(); });
     });
     
     wrapper.appendChild(submitBtn);

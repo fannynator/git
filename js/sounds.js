@@ -1,185 +1,284 @@
 // js/sounds.js
 
-import { playAchievementAnimation } from './lottie.js';
+let _ctx = null;
 
-let audioCtx = null;
-
-function getAudioContext() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function getCtx() {
+    if (_ctx) return _ctx;
+    try {
+        _ctx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        _ctx = null;
     }
-    return audioCtx;
+    return _ctx;
 }
 
 function playCorrectSound() {
     try {
-        const ctx = getAudioContext();
+        const ctx = getCtx(); if (!ctx) return;
         const now = ctx.currentTime;
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(523.25, now);
-        osc1.frequency.setValueAtTime(659.25, now + 0.08);
-        gain1.gain.setValueAtTime(0.25, now);
-        gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-        osc1.connect(gain1);
-        gain1.connect(ctx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.3);
-
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(659.25, now + 0.1);
-        osc2.frequency.setValueAtTime(783.99, now + 0.18);
-        gain2.gain.setValueAtTime(0.2, now + 0.1);
-        gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start(now + 0.1);
-        osc2.stop(now + 0.45);
+        const o1 = ctx.createOscillator(); const g1 = ctx.createGain();
+        o1.type = 'sine'; o1.frequency.setValueAtTime(523.25, now); o1.frequency.setValueAtTime(659.25, now + 0.08);
+        g1.gain.setValueAtTime(0.25, now); g1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        o1.connect(g1); g1.connect(ctx.destination); o1.start(now); o1.stop(now + 0.3);
+        const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
+        o2.type = 'sine'; o2.frequency.setValueAtTime(659.25, now + 0.1); o2.frequency.setValueAtTime(783.99, now + 0.18);
+        g2.gain.setValueAtTime(0.2, now + 0.1); g2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+        o2.connect(g2); g2.connect(ctx.destination); o2.start(now + 0.1); o2.stop(now + 0.45);
     } catch (e) {}
 }
 
 function playWrongSound() {
     try {
-        const ctx = getAudioContext();
+        const ctx = getCtx(); if (!ctx) return;
         const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.linearRampToValueAtTime(110, now + 0.35);
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.4);
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(220, now); o.frequency.linearRampToValueAtTime(110, now + 0.35);
+        g.gain.setValueAtTime(0.25, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 0.4);
     } catch (e) {}
 }
 
 function playAchievementSound() {
     try {
-        const ctx = getAudioContext();
+        const ctx = getCtx(); if (!ctx) return;
         const now = ctx.currentTime;
-        const notes = [523.25, 659.25, 783.99];
-        notes.forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, now + i * 0.12);
-            gain.gain.setValueAtTime(0.22, now + i * 0.12);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.35);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(now + i * 0.12);
-            osc.stop(now + i * 0.12 + 0.35);
+        [523.25, 659.25, 783.99].forEach((f, i) => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(f, now + i * 0.12);
+            g.gain.setValueAtTime(0.22, now + i * 0.12); g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.35);
+            o.connect(g); g.connect(ctx.destination); o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.35);
         });
-        [523.25, 659.25, 783.99].forEach(freq => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, now + 0.5);
-            gain.gain.setValueAtTime(0.15, now + 0.5);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.9);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(now + 0.5);
-            osc.stop(now + 0.9);
+        [523.25, 659.25, 783.99].forEach(f => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(f, now + 0.5);
+            g.gain.setValueAtTime(0.15, now + 0.5); g.gain.exponentialRampToValueAtTime(0.01, now + 0.9);
+            o.connect(g); g.connect(ctx.destination); o.start(now + 0.5); o.stop(now + 0.9);
         });
     } catch (e) {}
-    
-    playAchievementAnimation();
 }
 
-function playPetSound() {
+function playMeowSound() {
     try {
-        const ctx = getAudioContext();
+        const ctx = getCtx(); if (!ctx) return;
         const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const lfo = ctx.createOscillator();
-        const lfoGain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.linearRampToValueAtTime(350, now + 0.15);
-        osc.frequency.linearRampToValueAtTime(280, now + 0.3);
-        lfo.type = 'sine';
-        lfo.frequency.setValueAtTime(8, now);
-        lfoGain.gain.setValueAtTime(20, now);
-        lfo.connect(lfoGain);
-        lfoGain.connect(osc.frequency);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        lfo.start(now);
-        lfo.stop(now + 0.35);
-        osc.start(now);
-        osc.stop(now + 0.35);
+        // "Мя" — короткий высокий
+        const o1 = ctx.createOscillator(); const g1 = ctx.createGain();
+        o1.type = 'triangle';
+        o1.frequency.setValueAtTime(650, now);
+        o1.frequency.linearRampToValueAtTime(850, now + 0.06);
+        g1.gain.setValueAtTime(0.2, now);
+        g1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        o1.connect(g1); g1.connect(ctx.destination); o1.start(now); o1.stop(now + 0.15);
+        // "у" — протяжный низкий
+        const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
+        o2.type = 'triangle';
+        o2.frequency.setValueAtTime(450, now + 0.08);
+        o2.frequency.linearRampToValueAtTime(320, now + 0.35);
+        g2.gain.setValueAtTime(0.14, now + 0.08);
+        g2.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        o2.connect(g2); g2.connect(ctx.destination); o2.start(now + 0.08); o2.stop(now + 0.4);
     } catch (e) {}
 }
 
 export function spawnConfetti() {
-    const container = document.createElement('div');
-    container.className = 'confetti-container';
-    document.body.appendChild(container);
-    
+    const c = document.createElement('div'); c.className = 'confetti-container'; document.body.appendChild(c);
     const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
-    
     for (let i = 0; i < 12; i++) {
-        const piece = document.createElement('span');
-        piece.className = 'confetti-piece';
-        piece.textContent = '●';
-        piece.style.left = Math.random() * 100 + '%';
-        piece.style.top = -(Math.random() * 100) + 'px';
-        piece.style.color = colors[Math.floor(Math.random() * colors.length)];
-        piece.style.fontSize = (Math.random() * 10 + 6) + 'px';
-        piece.style.animationDelay = Math.random() * 0.3 + 's';
-        piece.style.animationDuration = (Math.random() * 0.4 + 0.5) + 's';
-        container.appendChild(piece);
+        const p = document.createElement('span'); p.className = 'confetti-piece'; p.textContent = '●';
+        p.style.left = Math.random() * 100 + '%'; p.style.top = -(Math.random() * 100) + 'px';
+        p.style.color = colors[Math.floor(Math.random() * colors.length)];
+        p.style.fontSize = (Math.random() * 10 + 6) + 'px';
+        p.style.animationDelay = Math.random() * 0.3 + 's';
+        p.style.animationDuration = (Math.random() * 0.4 + 0.5) + 's';
+        c.appendChild(p);
     }
-    
-    setTimeout(() => container.remove(), 1200);
+    setTimeout(() => c.remove(), 1200);
 }
 
 export function spawnLeaves() {
-    const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000;';
-    document.body.appendChild(container);
-    
+    const c = document.createElement('div'); c.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000;';
+    document.body.appendChild(c);
     const leaves = ['🍃', '🌿', '🍂', '🍁', '🌱', '✨'];
-    
     for (let i = 0; i < 20; i++) {
-        const leaf = document.createElement('span');
-        leaf.className = 'leaf-particle';
-        leaf.textContent = leaves[Math.floor(Math.random() * leaves.length)];
-        leaf.style.left = Math.random() * 100 + '%';
-        leaf.style.top = -(Math.random() * 50) + 'px';
-        leaf.style.fontSize = (Math.random() * 16 + 10) + 'px';
-        leaf.style.animationDelay = Math.random() * 0.8 + 's';
-        leaf.style.animationDuration = (Math.random() * 1.5 + 2) + 's';
-        container.appendChild(leaf);
+        const l = document.createElement('span'); l.className = 'leaf-particle'; l.textContent = leaves[Math.floor(Math.random() * leaves.length)];
+        l.style.left = Math.random() * 100 + '%'; l.style.top = -(Math.random() * 50) + 'px';
+        l.style.fontSize = (Math.random() * 16 + 10) + 'px';
+        l.style.animationDelay = Math.random() * 0.8 + 's';
+        l.style.animationDuration = (Math.random() * 1.5 + 2) + 's';
+        c.appendChild(l);
     }
-    
-    setTimeout(() => container.remove(), 3500);
+    setTimeout(() => c.remove(), 3500);
 }
 
-export function playSound(type) {
+export function spawnGems(count, startX, startY, targetEl) {
+    const target = targetEl || document.getElementById('gemCount');
+    if (!target) return;
+    const targetRect = target.getBoundingClientRect();
+    const targetX = targetRect.left + targetRect.width / 2;
+    const targetY = targetRect.top + targetRect.height / 2;
+    for (let i = 0; i < count; i++) {
+        const gem = document.createElement('span');
+        gem.textContent = '💎';
+        gem.style.cssText = `position:fixed;left:${startX}px;top:${startY}px;font-size:16px;pointer-events:none;z-index:1000;transition:all 0.8s;opacity:1;`;
+        document.body.appendChild(gem);
+        requestAnimationFrame(() => {
+            gem.style.left = targetX + 'px';
+            gem.style.top = targetY + 'px';
+            gem.style.opacity = '0';
+            gem.style.transform = 'scale(0.3)';
+        });
+        setTimeout(() => gem.remove(), 900);
+    }
+}
+
+/** Звуковые пресеты для тем */
+const THEME_SOUNDS = {
+    forest: {
+        correct: () => playXylophone([523, 659, 784]),
+        wrong: () => playWoodThump(),
+        achievement: () => playXylophone([392, 523, 659, 784], 0.15)
+    },
+    space: {
+        correct: () => playSynthChime(),
+        wrong: () => playAlienBuzz(),
+        achievement: () => playSynthArpeggio()
+    },
+    underwater: {
+        correct: () => playBubblePop(),
+        wrong: () => playSplash(),
+        achievement: () => playBubbleMelody()
+    }
+};
+
+function playXylophone(notes, delay = 0.12) {
+    try {
+        const ctx = getCtx(); if (!ctx) return;
+        const now = ctx.currentTime;
+        notes.forEach((f, i) => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.type = 'triangle'; o.frequency.setValueAtTime(f, now + i * delay);
+            g.gain.setValueAtTime(0.2, now + i * delay);
+            g.gain.exponentialRampToValueAtTime(0.01, now + i * delay + 0.35);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(now + i * delay); o.stop(now + i * delay + 0.35);
+        });
+    } catch (e) {}
+}
+
+function playWoodThump() {
+    try {
+        const ctx = getCtx(); if (!ctx) return;
+        const now = ctx.currentTime;
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(180, now);
+        o.frequency.exponentialRampToValueAtTime(60, now + 0.3);
+        g.gain.setValueAtTime(0.25, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 0.35);
+    } catch (e) {}
+}
+
+function playSynthChime() {
+    try {
+        const ctx = getCtx(); if (!ctx) return;
+        const now = ctx.currentTime;
+        [880, 1100, 1320].forEach((f, i) => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            const f1 = ctx.createBiquadFilter();
+            f1.type = 'lowpass'; f1.frequency.value = 3000;
+            o.type = 'sawtooth'; o.frequency.setValueAtTime(f, now + i * 0.08);
+            g.gain.setValueAtTime(0.12, now + i * 0.08);
+            g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.25);
+            o.connect(f1); f1.connect(g); g.connect(ctx.destination);
+            o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.25);
+        });
+    } catch (e) {}
+}
+
+function playAlienBuzz() {
+    try {
+        const ctx = getCtx(); if (!ctx) return;
+        const now = ctx.currentTime;
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        const f1 = ctx.createBiquadFilter();
+        f1.type = 'lowpass'; f1.frequency.value = 500;
+        o.type = 'square'; o.frequency.setValueAtTime(150, now);
+        o.frequency.linearRampToValueAtTime(80, now + 0.35);
+        g.gain.setValueAtTime(0.12, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        o.connect(f1); f1.connect(g); g.connect(ctx.destination);
+        o.start(now); o.stop(now + 0.4);
+    } catch (e) {}
+}
+
+function playSynthArpeggio() {
+    try {
+        const ctx = getCtx(); if (!ctx) return;
+        const now = ctx.currentTime;
+        [660, 880, 1100, 1320].forEach((f, i) => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            const f1 = ctx.createBiquadFilter();
+            f1.type = 'lowpass'; f1.frequency.value = 3000;
+            o.type = 'sawtooth'; o.frequency.setValueAtTime(f, now + i * 0.12);
+            g.gain.setValueAtTime(0.1, now + i * 0.12);
+            g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.3);
+            o.connect(f1); f1.connect(g); g.connect(ctx.destination);
+            o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.3);
+        });
+    } catch (e) {}
+}
+
+function playBubblePop() {
+    try {
+        const ctx = getCtx(); if (!ctx) return;
+        const now = ctx.currentTime;
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(400, now);
+        o.frequency.linearRampToValueAtTime(600, now + 0.06);
+        o.frequency.linearRampToValueAtTime(800, now + 0.12);
+        g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 0.25);
+    } catch (e) {}
+}
+
+function playSplash() {
+    try {
+        const ctx = getCtx(); if (!ctx) return;
+        const now = ctx.currentTime;
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(180, now);
+        o.frequency.linearRampToValueAtTime(100, now + 0.45);
+        g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 0.5);
+    } catch (e) {}
+}
+
+function playBubbleMelody() {
+    try {
+        const ctx = getCtx(); if (!ctx) return;
+        const now = ctx.currentTime;
+        [350, 500, 700, 900].forEach((f, i) => {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(f, now + i * 0.15);
+            o.frequency.linearRampToValueAtTime(f * 1.2, now + i * 0.15 + 0.1);
+            g.gain.setValueAtTime(0.15, now + i * 0.15);
+            g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(now + i * 0.15); o.stop(now + i * 0.15 + 0.4);
+        });
+    } catch (e) {}
+}
+
+export function playSound(type, themeId) {
+    const theme = themeId && THEME_SOUNDS[themeId];
+    if (theme && theme[type]) {
+        theme[type]();
+        if (type === 'achievement') spawnConfetti();
+        return;
+    }
     switch (type) {
-        case 'correct':
-            playCorrectSound();
-            break;
-        case 'wrong':
-            playWrongSound();
-            break;
-        case 'achievement':
-            playAchievementSound();
-            spawnConfetti();
-            break;
-        case 'pet':
-            playPetSound();
-            break;
+        case 'correct': playCorrectSound(); break;
+        case 'wrong': playWrongSound(); break;
+        case 'achievement': playAchievementSound(); spawnConfetti(); break;
+        case 'pet': playMeowSound(); break;
+        case 'meow': playMeowSound(); break;
     }
 }

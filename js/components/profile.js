@@ -1,7 +1,10 @@
-import { $ } from '../utils.js';
-import { state, resetAllProgress } from '../state.js';
-import { SUBJECTS } from '../config.js';
+// js/components/profile.js
+
+import { $, $$, showToast } from '../utils.js';
+import { state, resetAllProgress, applyTheme, saveState, checkThemeUnlocks } from '../state.js';
+import { SUBJECTS, THEMES, countCompletedLessons, CAT_SPEECH } from '../config.js';
 import { renderSkillTree } from './skillTree.js';
+import { renderPet } from './pet.js';
 import { updateStats } from '../app.js';
 
 export function renderProfile() {
@@ -9,28 +12,123 @@ export function renderProfile() {
     const done = (state.storiesCompleted.math ? 1 : 0) + (state.storiesCompleted.rus1 ? 1 : 0) + (state.storiesCompleted.rus2 ? 1 : 0);
     const def = state.traps.reduce((s, t) => s + t.defuses, 0);
     const unl = Object.values(state.achievements).filter(a => a.unlocked).length;
+    const total = Object.values(state.achievements).length;
+    const totalLessons = countCompletedLessons(state.skills[SUBJECTS.MATH]) + countCompletedLessons(state.skills[SUBJECTS.RUSSIAN]);
 
-    let html = `<div class="profile-header ${im ? 'math-prof' : 'rus-prof'}">
-        <div class="profile-cat">${im ? '🐱' : '😺'}</div>
-        <div class="profile-name">Кот Учёный</div>
-        <div style="font-size:11px;color:var(--text-light);">${im ? 'Математик' : 'Филолог'}</div>
-        <div class="profile-stats">
-            <div class="profile-stat"><div class="profile-stat-val">${done}</div><div class="profile-stat-label">Историй</div></div>
-            <div class="profile-stat"><div class="profile-stat-val">${def}</div><div class="profile-stat-label">Ловушек</div></div>
-            <div class="profile-stat"><div class="profile-stat-val">${unl}</div><div class="profile-stat-label">Ачивок</div></div>
+    let html = `
+    <div class="profile-hero">
+        <div class="profile-name">🐱 Кот Учёный</div>
+        <div class="profile-role">${im ? 'Математик' : 'Филолог'} · Уровень ${totalLessons + 1}</div>
+        <div class="profile-stats-row">
+            <div class="profile-stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-value">${totalLessons}</div>
+                <div class="stat-label">Уроков</div>
+            </div>
+            <div class="profile-stat-card">
+                <div class="stat-icon">🧮</div>
+                <div class="stat-value">${done}</div>
+                <div class="stat-label">Историй</div>
+            </div>
+            <div class="profile-stat-card">
+                <div class="stat-icon">🪤</div>
+                <div class="stat-value">${def}</div>
+                <div class="stat-label">Ловушек</div>
+            </div>
+            <div class="profile-stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value">${unl}</div>
+                <div class="stat-label">Ачивок</div>
+            </div>
         </div>
     </div>
-    <div style="font-weight:800;color:var(--text);margin-bottom:10px;">🏆 Достижения</div>
-    <div class="ach-grid">`;
+
+    <!-- Питомец (свой dom-контейнер для renderPet) -->
+    <div id="petPanel"></div>
+
+    <div class="profile-section">
+        <div class="profile-section-title">
+            <span>🏆</span> Достижения <span class="section-badge">${unl}/${total}</span>
+        </div>
+        <div class="ach-grid">`;
 
     Object.values(state.achievements).forEach(a => {
         const cls = a.unlocked ? 'unlocked' : 'locked';
-        html += `<div class="ach-item ${cls}"><div class="ach-icon">${a.unlocked ? a.name.split(' ')[0] : '🔒'}</div><div class="ach-name">${a.name.split(' ').slice(1).join(' ')}</div><div class="ach-desc">${a.desc}</div></div>`;
+        const icon = a.unlocked ? a.name.split(' ')[0] : '🔒';
+        const name = a.name.split(' ').slice(1).join(' ');
+        html += `
+        <div class="ach-item ${cls}">
+            <div class="ach-icon">${icon}</div>
+            <div class="ach-name">${name}</div>
+            <div class="ach-desc">${a.desc}</div>
+        </div>`;
     });
 
-    html += '</div><button class="reset-progress-btn" id="resetProgressBtn">🔄 Сбросить прогресс</button>';
+    // Селектор тем
+    html += `
+        </div>
+    </div>
+
+    <div class="profile-section">
+        <div class="profile-section-title"><span>🎨</span> Оформление</div>
+        <div class="theme-grid">`;
+
+    const totalDone = countCompletedLessons(state.skills[SUBJECTS.MATH]) + countCompletedLessons(state.skills[SUBJECTS.RUSSIAN]);
+    Object.values(THEMES).forEach(t => {
+        const isUnlocked = t.unlocked || (t.unlockAt && totalDone >= t.unlockAt);
+        const isActive = state.theme === t.id;
+        const lockEmoji = isUnlocked ? '' : `<span class="theme-lock">🔒</span>`;
+        html += `
+        <div class="theme-card ${isActive ? 'active' : ''} ${isUnlocked ? '' : 'locked'}" data-theme="${t.id}" data-unlocked="${isUnlocked ? '1' : '0'}">
+            ${lockEmoji}
+            <div class="theme-emoji">${t.catEmoji}</div>
+            <div class="theme-name">${t.name}</div>
+        </div>`;
+    });
+
+    html += `
+        </div>
+    </div>
+    <button class="reset-progress-btn" id="resetProgressBtn">🔄 Сбросить прогресс</button>`;
+
     $('#profileContent').innerHTML = html;
 
+    // Рендерим питомца в отведённый контейнер
+    renderPet('petPanel');
+
+    // Переключение тем
+    $$('.theme-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const themeId = card.dataset.theme;
+            const unlocked = card.dataset.unlocked === '1';
+            if (!unlocked) {
+                const t = THEMES[themeId];
+                showToast('🔒', `Разблокируется после ${t.unlockAt} уроков`, $('#toast'));
+                return;
+            }
+            applyTheme(themeId);
+            saveState();
+            // Обновляем активную карточку
+            $$('.theme-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            // Обновляем шапку под текущий предмет
+            const im2 = state.subject === SUBJECTS.MATH;
+            const headerBar = document.getElementById('headerBar');
+            const catStage = document.getElementById('catStage');
+            if (headerBar) headerBar.className = 'header ' + (im2 ? 'math-header' : 'rus-header');
+            if (catStage) catStage.className = 'cat-stage ' + (im2 ? 'math-stage' : 'rus-stage');
+            const btnMath = document.getElementById('btnMath');
+            const btnRus = document.getElementById('btnRus');
+            if (btnMath) btnMath.classList.toggle('active', im2);
+            if (btnRus) btnRus.classList.toggle('active', !im2);
+            const appEl = document.getElementById('app');
+            if (appEl) appEl.className = 'app' + (im2 ? '' : ' rus-mode');
+            const catSpeech = document.getElementById('catSpeech');
+            if (catSpeech) catSpeech.textContent = im2 ? CAT_SPEECH.math : CAT_SPEECH.russian;
+        });
+    });
+
+    // Сброс прогресса
     $('#resetProgressBtn').addEventListener('click', () => {
         if (confirm('Точно сбросить ВЕСЬ прогресс? Это нельзя отменить!')) {
             if (confirm('Последний шанс. Сбросить?')) {
@@ -40,11 +138,18 @@ export function renderProfile() {
                 updateStats();
                 const catSpeech = $('#catSpeech');
                 const catBody = $('#catBody');
+                const catAvatar = $('#catAvatar');
                 if (catSpeech) catSpeech.textContent = 'Мур! Начинаем заново!';
                 if (catBody) catBody.textContent = '🐱';
-                document.getElementById('headerBar').className = 'header math-header';
-                document.getElementById('catStage').className = 'cat-stage math-stage';
-                document.getElementById('app').classList.remove('rus-mode');
+                if (catAvatar) catAvatar.textContent = '🐱';
+                const headerBar = document.getElementById('headerBar');
+                const catStage = document.getElementById('catStage');
+                const appEl = document.getElementById('app');
+                if (headerBar) headerBar.className = 'header math-header';
+                if (catStage) catStage.className = 'cat-stage math-stage';
+                if (appEl) appEl.classList.remove('rus-mode');
+                // Сбрасываем дату последнего визита для streak
+                localStorage.removeItem('kot_ucheniy_last_visit');
             }
         }
     });

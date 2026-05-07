@@ -20,54 +20,64 @@ export const showToast = (emoji, message, toastEl) => {
     toastEl._tid = setTimeout(() => toastEl.classList.remove('show'), 2000);
 };
 
+/** Всплывающие +XP частицы */
+export function spawnXP(amount, x, y, parent = document.body) {
+    const el = document.createElement('div');
+    el.className = 'xp-particle';
+    el.textContent = `+${amount} 💎`;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    parent.appendChild(el);
+    setTimeout(() => el.remove(), 1300);
+}
+
+/** Lottie-анимация */
+export function playLottie(container, animationUrl, options = {}) {
+    if (!window.lottie || !container) return;
+    const anim = window.lottie.loadAnimation({
+        container,
+        renderer: 'svg',
+        loop: options.loop ?? false,
+        autoplay: true,
+        path: animationUrl
+    });
+    if (options.onComplete) anim.addEventListener('complete', options.onComplete);
+    return anim;
+}
+
 export const makeWrongs = (correct, count = 3) => {
     const wrongs = new Set();
-    const maxAttempts = 50;
-    let attempts = 0;
-    
-    while (wrongs.size < count && attempts < maxAttempts) {
-        attempts++;
+    while (wrongs.size < count) {
         let delta;
-        if (correct <= 10) {
-            delta = rnd(-3, 3);
-        } else if (correct <= 50) {
-            delta = rnd(-Math.floor(correct * 0.3), Math.floor(correct * 0.3));
-        } else {
-            delta = rnd(-Math.floor(correct * 0.2), Math.floor(correct * 0.2));
-        }
-        
+        if (correct <= 10) delta = rnd(-3, 3);
+        else if (correct <= 50) delta = rnd(-Math.floor(correct * 0.3), Math.floor(correct * 0.3));
+        else delta = rnd(-Math.floor(correct * 0.2), Math.floor(correct * 0.2));
         const candidate = correct + delta;
-        
-        if (candidate !== correct && candidate >= 0 && !wrongs.has(candidate)) {
-            wrongs.add(candidate);
-        }
+        if (candidate !== correct && candidate >= 0 && !wrongs.has(candidate)) wrongs.add(candidate);
     }
-    
     return [...wrongs];
 };
 
-/**
- * Создать задание типа "выбор"
- * ВАЖНО: теперь correctIdx вычисляется ПОСЛЕ перемешивания,
- * а correctAns хранит ЗНАЧЕНИЕ правильного ответа для сверки
- */
+/** Создать неправильные варианты из пула (для русского) */
+export const makeStringWrongs = (correct, pool, count = 3) => {
+    const others = [...new Set(pool.filter(x => x !== correct))];
+    const shuf = shuffle(others);
+    return shuf.slice(0, Math.min(count, shuf.length));
+};
+
 export const choiceT = (emoji, badge, badgeClass, question, correct, explanation) => {
     const allOptions = [correct, ...makeWrongs(correct)];
     const options = shuffle(allOptions);
-    // Ищем индекс правильного ответа в перемешанном массиве
     const correctIdx = options.findIndex(opt => opt === correct);
-    
-    return {
-        type: 'choice',
-        emoji,
-        badge,
-        badgeClass,
-        question,
-        options,
-        correctIdx,
-        correctAns: correct,
-        explanation
-    };
+    return { type: 'choice', emoji, badge, badgeClass, question, options, correctIdx, correctAns: correct, explanation };
+};
+
+/** choice с заранее заданными вариантами (для строк) */
+export const choiceStrT = (emoji, badge, badgeClass, question, correct, wrongPool, count, explanation) => {
+    const wrongs = makeStringWrongs(correct, wrongPool, count);
+    const allOptions = shuffle([correct, ...wrongs]);
+    const correctIdx = allOptions.findIndex(opt => opt === correct);
+    return { type: 'choice', emoji, badge, badgeClass, question, options: allOptions, correctIdx, correctAns: correct, explanation };
 };
 
 export const inputT = (emoji, badge, badgeClass, question, correct, explanation) => {
@@ -76,4 +86,13 @@ export const inputT = (emoji, badge, badgeClass, question, correct, explanation)
 
 export const pairT = (emoji, badge, badgeClass, question, pairs, explanation) => {
     return { type: 'pair', emoji, badge, badgeClass, question, pairs, explanation };
+};
+
+/** Визуальное задание: SVG + выбор ответа */
+export const visualT = (emoji, badge, badgeClass, svg, question, correct, options, explanation) => {
+    // Гарантируем, что правильный ответ есть среди вариантов
+    const allOpts = options.includes(correct) ? options : [correct, ...options];
+    const uniqueOpts = [...new Set(allOpts)];
+    const correctIdx = uniqueOpts.findIndex(opt => opt === correct);
+    return { type: 'visual', emoji, badge, badgeClass, svg, question, options: uniqueOpts, correctIdx, correctAns: correct, explanation };
 };
