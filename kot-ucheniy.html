@@ -1094,13 +1094,6 @@ const checkThemeUnlocks = () => {
     });
 };
 
-/** Получить плоский список всех навыков предмета (для подсчёта прогресса тем) */
-function getAllSkillsForSubject(subject) {
-    const skills = state.skills[subject];
-    if (!skills) return [];
-    return Object.values(skills).flat();
-}
-
 /* === js/generators/math.js === */
 // js/generators/math.js
 
@@ -5429,35 +5422,64 @@ class Cat3D {
         // Группа кота
         this.catGroup = new THREE.Group();
 
-        // ─── ТЕЛО ───
-        const bodyGeo = new THREE.SphereGeometry(0.9, 16, 16);
-        bodyGeo.scale(1, 1.1, 0.8);
+        // ─── ТЕЛО (грушевидное, сидячее) ───
+        const bodyGroup = new THREE.Group();
+        // Основа — сфера, вытянутая вверх (грушевидная форма)
+        const bodyGeo = new THREE.SphereGeometry(0.75, 20, 20);
+        bodyGeo.scale(1, 1.35, 0.75);
         const bodyMat = new THREE.MeshToonMaterial({ color: furColor });
         const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        bodyMesh.position.y = -1.0;
+        bodyMesh.position.y = -0.95;
         bodyMesh.castShadow = true;
         bodyMesh.receiveShadow = true;
-        this.catGroup.add(bodyMesh);
+        bodyGroup.add(bodyMesh);
         this.bodyMesh = bodyMesh;
 
+        // Нижняя часть тела (более широкая, "сидячая" попа)
+        const lowerBodyGeo = new THREE.SphereGeometry(0.6, 16, 16);
+        lowerBodyGeo.scale(1.1, 0.7, 0.85);
+        const lowerBody = new THREE.Mesh(lowerBodyGeo, bodyMat);
+        lowerBody.position.y = -1.55;
+        lowerBody.castShadow = true;
+        bodyGroup.add(lowerBody);
+
         // Пузико
-        const bellyGeo = new THREE.SphereGeometry(0.6, 12, 12);
-        bellyGeo.scale(1, 0.85, 0.6);
+        const bellyGeo = new THREE.SphereGeometry(0.5, 14, 14);
+        bellyGeo.scale(1, 0.8, 0.55);
         const bellyMat = new THREE.MeshToonMaterial({ color: bellyColor });
         const bellyMesh = new THREE.Mesh(bellyGeo, bellyMat);
-        bellyMesh.position.set(0, -1.05, 0.55);
-        this.catGroup.add(bellyMesh);
+        bellyMesh.position.set(0, -1.05, 0.5);
+        bodyGroup.add(bellyMesh);
 
-        // ─── ГОЛОВА ───
+        bodyGroup.position.y = 0;
+        this.catGroup.add(bodyGroup);
+        this.bodyGroup = bodyGroup;
+
+        // ─── ШЕЯ ───
+        const neckGeo = new THREE.CylinderGeometry(0.2, 0.28, 0.35, 12);
+        const neckMat = new THREE.MeshToonMaterial({ color: furColor });
+        const neckMesh = new THREE.Mesh(neckGeo, neckMat);
+        neckMesh.position.y = -0.2;
+        this.catGroup.add(neckMesh);
+
+        // ─── ГОЛОВА (широкая, приплюснутая — кошачья) ───
         const headGroup = new THREE.Group();
         headGroup.position.y = 0.05;
 
-        const headGeo = new THREE.SphereGeometry(0.65, 16, 16);
-        headGeo.scale(1, 0.95, 0.9);
+        // Основная сфера головы — шире чем выше
+        const headGeo = new THREE.SphereGeometry(0.6, 20, 20);
+        headGeo.scale(1.2, 0.85, 1.0);
         const headMat = new THREE.MeshToonMaterial({ color: furColor });
         const headMesh = new THREE.Mesh(headGeo, headMat);
         headMesh.castShadow = true;
         headGroup.add(headMesh);
+
+        // Нижняя челюсть — дополнительный объём снизу
+        const jawGeo = new THREE.SphereGeometry(0.35, 14, 14);
+        jawGeo.scale(1.0, 0.55, 0.7);
+        const jawMesh = new THREE.Mesh(jawGeo, headMat);
+        jawMesh.position.set(0, -0.28, 0.15);
+        headGroup.add(jawMesh);
 
         // Щёки
         const cheekGeo = new THREE.SphereGeometry(0.22, 12, 12);
@@ -5543,42 +5565,54 @@ class Cat3D {
 
         // ─── УШИ ───
         this.earsGroup = new THREE.Group();
-        this.earLeft = this.buildEar();
+        this.earLeft = this.buildEar(furColor);
         this.earLeft.position.set(-0.38, 0.55, -0.05);
         this.earLeft.rotation.z = 0.3;
-        this.earRight = this.buildEar();
+        this.earRight = this.buildEar(furColor);
         this.earRight.position.set(0.38, 0.55, -0.05);
         this.earRight.rotation.z = -0.3;
         this.earsGroup.add(this.earLeft);
         this.earsGroup.add(this.earRight);
         this.catGroup.add(this.earsGroup);
 
-        // ─── ЛАПЫ (передние) ───
+        // ─── ЛАПЫ (передние, округлые) ───
         this.pawsGroup = new THREE.Group();
-        const pawGeo = new THREE.CylinderGeometry(0.18, 0.2, 0.7, 12);
         const pawMat = new THREE.MeshToonMaterial({ color: furColor });
-        const pawL = new THREE.Mesh(pawGeo, pawMat);
-        pawL.position.set(-0.35, -1.5, 0.3);
-        pawL.castShadow = true;
-        const pawR = new THREE.Mesh(pawGeo, pawMat);
-        pawR.position.set(0.35, -1.5, 0.3);
-        pawR.castShadow = true;
-        this.pawsGroup.add(pawL);
-        this.pawsGroup.add(pawR);
 
-        // Подушечки на лапах (розовые сферы-сплюснутые)
-        const padGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        padGeo.scale(1, 0.5, 1);
-        const padMat = new THREE.MeshToonMaterial({ color: '#FECACA' });
-        const padPositions = [
-            { x: -0.35, y: -1.85, z: 0.45 },
-            { x: 0.35, y: -1.85, z: 0.45 }
-        ];
-        padPositions.forEach(pp => {
-            const pad = new THREE.Mesh(padGeo, padMat);
-            pad.position.set(pp.x, pp.y, pp.z);
-            pad.rotation.x = Math.PI / 2;
-            this.pawsGroup.add(pad);
+        [-1, 1].forEach(side => {
+            // Ножка (цилиндр, сужающийся книзу)
+            const legGeo = new THREE.CylinderGeometry(0.2, 0.18, 0.55, 12);
+            const leg = new THREE.Mesh(legGeo, pawMat);
+            leg.position.set(side * 0.35, -1.3, 0.25);
+            leg.castShadow = true;
+            this.pawsGroup.add(leg);
+
+            // Сама лапка (сплюснутая сфера)
+            const footGeo = new THREE.SphereGeometry(0.18, 12, 8);
+            footGeo.scale(1, 0.45, 1.2);
+            const foot = new THREE.Mesh(footGeo, pawMat);
+            foot.position.set(side * 0.35, -1.65, 0.35);
+            foot.castShadow = true;
+            this.pawsGroup.add(foot);
+
+            // Три подушечки-пальчика
+            const toeGeo = new THREE.SphereGeometry(0.05, 8, 8);
+            toeGeo.scale(1, 0.4, 1);
+            const toeMat = new THREE.MeshToonMaterial({ color: '#FECACA' });
+            [[-0.08, -0.02], [0, 0.04], [0.08, -0.02]].forEach(([dx, dz]) => {
+                const toe = new THREE.Mesh(toeGeo, toeMat);
+                toe.position.set(side * 0.35 + dx * side, -1.72, 0.4 + dz);
+                toe.rotation.x = -Math.PI / 2;
+                this.pawsGroup.add(toe);
+            });
+
+            // Большая центральная подушечка
+            const bigPadGeo = new THREE.SphereGeometry(0.07, 8, 8);
+            bigPadGeo.scale(1, 0.4, 1.2);
+            const bigPad = new THREE.Mesh(bigPadGeo, toeMat);
+            bigPad.position.set(side * 0.35, -1.72, 0.25);
+            bigPad.rotation.x = -Math.PI / 2;
+            this.pawsGroup.add(bigPad);
         });
 
         this.catGroup.add(this.pawsGroup);
@@ -5674,12 +5708,12 @@ class Cat3D {
         return group;
     }
 
-    buildEar() {
+    buildEar(furColor) {
         const group = new THREE.Group();
 
         // Внешнее ухо
         const outerGeo = new THREE.ConeGeometry(0.22, 0.5, 8, 1);
-        const outerMat = new THREE.MeshToonMaterial({ color: '#F59E0B' });
+        const outerMat = new THREE.MeshToonMaterial({ color: furColor });
         const outer = new THREE.Mesh(outerGeo, outerMat);
         outer.castShadow = true;
         group.add(outer);

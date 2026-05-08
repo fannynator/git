@@ -255,9 +255,3 @@ export const checkThemeUnlocks = () => {
     });
 };
 
-/** Получить плоский список всех навыков предмета (для подсчёта прогресса тем) */
-function getAllSkillsForSubject(subject) {
-    const skills = state.skills[subject];
-    if (!skills) return [];
-    return Object.values(skills).flat();
-}
