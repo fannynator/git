@@ -1,8 +1,26 @@
 import { $, $$, showToast } from '../utils.js';
-import { getCurrentSkills, state } from '../state.js';
+import { getCurrentSkills, state, saveState } from '../state.js';
 import { startLesson } from './lesson.js';
 
+function updateClassSelector() {
+    const btns = $$('#classSelector .class-btn');
+    btns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.class === state.currentClass);
+    });
+}
+
+export function switchClass(newClass) {
+    if (state.currentClass !== newClass) {
+        state.currentClass = newClass;
+        state.classSwitches++;
+        saveState();
+    }
+    updateClassSelector();
+    renderSkillTree();
+}
+
 export function renderSkillTree() {
+    updateClassSelector();
     const skills = getCurrentSkills();
     const container = $('#skillTree');
     if (!container) return;

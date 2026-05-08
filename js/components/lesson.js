@@ -5,7 +5,7 @@ import { state, saveState, getCurrentSkills, unlockAchievement, checkAchievement
 import { GEMS, SKILL, CAT_SPEECH, STORAGE_KEY } from '../config.js';
 import { generateMathLesson } from '../generators/math.js';
 import { generateRusLesson } from '../generators/russian.js';
-import { renderTask } from './taskRenderer.js';
+import { renderTask, showHint } from './taskRenderer.js';
 import { renderSkillTree } from './skillTree.js';
 import { updateTrapsBadge } from './trap.js';
 import { updateStats, showAchievementToast } from '../app.js';
@@ -25,7 +25,9 @@ function saveLessonProgress() {
         skillId: state.lessonSkillId, subject: state.subject,
         step: state.lessonStep, tasks: state.lessonTasks,
         correct: state.lessonCorrect, wrong: state.lessonWrong,
-        stepHistory: stepHistory
+        stepHistory: stepHistory,
+        hintsRemaining: state.lessonHintsRemaining,
+        hintUsed: state.lessonHintUsed
     };
     localStorage.setItem(LESSON_STORAGE_KEY, JSON.stringify(progress));
 }
@@ -40,6 +42,8 @@ function loadLessonProgress() {
         state.lessonStep = progress.step; state.lessonTasks = progress.tasks;
         state.lessonCorrect = progress.correct; state.lessonWrong = progress.wrong;
         stepHistory = progress.stepHistory || [];
+        if (progress.hintsRemaining !== undefined) state.lessonHintsRemaining = progress.hintsRemaining;
+        if (progress.hintUsed !== undefined) state.lessonHintUsed = progress.hintUsed;
         return true;
     } catch (e) { return false; }
 }
@@ -74,6 +78,43 @@ function renderDots() {
     container.innerHTML = html;
 }
 
+function initLessonHints() {
+    state.lessonHintsRemaining = 2;
+    state.lessonHintUsed = false;
+    const btn = $('#lessonHintBtn');
+    if (btn) btn.classList.remove('used');
+}
+
+function useHint() {
+    if (state.lessonHintsRemaining <= 0) return;
+    state.lessonHintsRemaining--;
+    state.lessonHintUsed = true;
+    const btn = $('#lessonHintBtn');
+    if (btn) {
+        btn.classList.add('used');
+        if (state.lessonHintsRemaining <= 0) {
+            btn.textContent = '💡 0';
+            btn.style.opacity = '0.4';
+            btn.style.pointerEvents = 'none';
+        } else {
+            btn.textContent = '💡 ' + state.lessonHintsRemaining;
+        }
+    }
+    // Показать визуальную подсказку
+    const scene = $('#lessonScene');
+    const task = state.lessonTasks[state.lessonStep];
+    if (scene && task) {
+        showHint(scene, task);
+        // Штраф XP за подсказку
+        const penalty = 25;
+        if (state.gems >= penalty) {
+            state.gems -= penalty;
+            updateStats();
+        }
+    }
+    saveLessonProgress();
+}
+
 export function startLesson(skillId) {
     const saved = localStorage.getItem(LESSON_STORAGE_KEY);
     if (saved) {
@@ -90,6 +131,15 @@ export function startLesson(skillId) {
                     $('#lessonHeader').className = 'lesson-header ' + (im ? 'math-bar' : 'rus-bar');
                     $('#lessonNextBtn').className = 'lesson-next ' + (im ? 'math-next' : 'rus-next');
                     $('#btnLessonFinish').className = 'btn-lesson-finish ' + (im ? 'math-finish' : 'rus-finish');
+                    // Восстановить кнопку подсказок
+                    const hintBtn = $('#lessonHintBtn');
+                    if (hintBtn) {
+                        hintBtn.classList.toggle('used', state.lessonHintsRemaining <= 0);
+                        hintBtn.textContent = '💡 ' + state.lessonHintsRemaining;
+                        hintBtn.style.opacity = state.lessonHintsRemaining <= 0 ? '0.4' : '1';
+                        hintBtn.style.pointerEvents = state.lessonHintsRemaining <= 0 ? 'none' : 'auto';
+                    }
+                    updateDifficultyBadge();
                     updateProgressBar(); renderDots();
                     $('#lessonOverlay').classList.add('active');
                     $('#lessonNextBtn').classList.remove('show');
@@ -104,6 +154,7 @@ export function startLesson(skillId) {
     }
 
     const im = state.subject === 'math';
+    initLessonHints();
     state.currentLesson = skillId; state.lessonSkillId = skillId;
     state.lessonStep = 0; state.lessonCorrect = 0; state.lessonWrong = 0;
     state.lessonTasks = generateLesson(skillId, state.subject);
@@ -121,8 +172,31 @@ export function startLesson(skillId) {
     $('#lessonNextBtn').classList.remove('show');
     $('#lessonFinishBlock').classList.remove('show');
     $('#lessonScene').style.display = 'flex';
+    // Активировать кнопку подсказок
+    const hintBtn = $('#lessonHintBtn');
+    if (hintBtn) {
+        hintBtn.classList.remove('used');
+        hintBtn.textContent = '💡 ' + state.lessonHintsRemaining;
+        hintBtn.style.opacity = '1';
+        hintBtn.style.pointerEvents = 'auto';
+    }
+    updateDifficultyBadge();
     saveLessonProgress();
     renderLessonStep();
+}
+
+// Экспортируем useHint глобально
+window.useLessonHint = useHint;
+
+// ─── Индикатор уровня сложности ───────────────────────────
+function updateDifficultyBadge() {
+    const badge = $('#difficultyBadge');
+    if (!badge) return;
+    const lvl = state.difficultyLevel;
+    const stars = '⭐'.repeat(Math.min(lvl, 5));
+    badge.textContent = (lvl > 5 ? `🔥 ` : '') + stars + ' ' + lvl;
+    badge.classList.add('level-up');
+    setTimeout(() => badge.classList.remove('level-up'), 600);
 }
 
 export async function closeLesson() {
@@ -244,6 +318,18 @@ function finishLesson() {
         skill.progress = np;
         if (np >= SKILL.PROGRESS_TO_COMPLETE) { skill.status = 'completed'; unlockNext(skill); }
     }
+
+    // Adaptive difficulty
+    const lessonRatio = c / totalTasks;
+    const oldLevel = state.difficultyLevel;
+    if (w === 0 && oldLevel < 10) {
+        state.difficultyLevel++;
+        showToast('📈', `Сложность повышена до уровня ${state.difficultyLevel}!`, $('#toast'));
+    } else if (lessonRatio < 0.5 && oldLevel > 0) {
+        state.difficultyLevel--;
+        showToast('📉', `Сложность снижена до уровня ${state.difficultyLevel}`, $('#toast'));
+    }
+    updateDifficultyBadge();
 
     updateProgressBar();
     const catSpeech = $('#catSpeech');

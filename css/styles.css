@@ -1,5 +1,6 @@
 :root {
     --math-primary: #3B82F6; --math-light: #EFF6FF; --math-gradient: linear-gradient(135deg, #3B82F6, #1D4ED8);
+    --neon-yellow: #fbbf24; --neon-green: #10B981;
     --rus-primary: #7C3AED; --rus-light: #F5F3FF; --rus-gradient: linear-gradient(135deg, #7C3AED, #5B21B6);
     --green: #10B981; --green-light: #D1FAE5; --red: #EF4444; --red-light: #FEE2E2;
     --orange: #F59E0B; --gold: #FBBF24; --gold-light: #FEF3C7;
@@ -155,6 +156,45 @@ body.theme-underwater .profile-avatar::after {
 .lottie-fade { animation:lottieFade 2.5s ease forwards; }
 @keyframes lottieFade { 0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(0.8)} }
 @keyframes floatUp { 0%{transform:translateY(0) scale(1);opacity:1} 100%{transform:translateY(-50px) scale(1.8);opacity:0} }
+
+/* ══════════ СЕЛЕКТОР КЛАССОВ ══════════ */
+.class-selector {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+}
+.class-selector::-webkit-scrollbar { display: none; }
+.class-btn {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    background: var(--card);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-light);
+    font-family: inherit;
+    white-space: nowrap;
+}
+body.theme-dark .class-btn,
+body.theme-space .class-btn {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--card);
+    color: var(--text-light);
+}
+.class-btn.active {
+    background: var(--theme-primary);
+    color: white;
+    border-color: var(--theme-primary);
+    box-shadow: 0 2px 8px rgba(var(--theme-primary-rgb), 0.3);
+}
+.class-btn:active { transform: scale(0.95); }
 
 /* ══════════ MAIN ══════════ */
 .main-content { flex:1; overflow-y:auto; padding:6px 12px 8px; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
@@ -407,6 +447,47 @@ body.theme-dark .tutorial-dot, body.theme-space .tutorial-dot { background:rgba(
 .boss-input { width:80px; padding:10px; border-radius:10px; border:2px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.08); color:white; font-size:16px; text-align:center; font-weight:700; outline:none; font-family:inherit; transition:all 0.2s ease; }
 .boss-input:focus { border-color:var(--gold); }
 
+/* ─── Босс: индивидуальный фидбек по каждому слову ─── */
+.boss-feedback {
+    display: none;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: left;
+    padding: 6px 10px;
+    margin: -2px 0 6px;
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+.boss-feedback.good {
+    display: block;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.25);
+    color: #10B981;
+}
+.boss-feedback.bad {
+    display: block;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    color: #EF4444;
+}
+/* Светлые темы */
+body.theme-light .boss-feedback.good,
+body.theme-forest .boss-feedback.good,
+body.theme-underwater .boss-feedback.good {
+    background: rgba(16,185,129,0.08);
+    border-color: rgba(16,185,129,0.25);
+    color: #065F46;
+}
+body.theme-light .boss-feedback.bad,
+body.theme-forest .boss-feedback.bad,
+body.theme-underwater .boss-feedback.bad {
+    background: rgba(239,68,68,0.06);
+    border-color: rgba(239,68,68,0.2);
+    color: #991B1B;
+}
+
 /* ══════════ ИСТОРИИ (OVERLAY) ══════════ */
 .story-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:300; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
 .story-overlay.active { opacity:1; pointer-events:all; }
@@ -655,5 +736,847 @@ body.theme-space .app::after {
 @keyframes starsTwinkle {
     0% { opacity: 0.5; }
     100% { opacity: 1; }
+}
+
+/* ─── HINT SYSTEM ─────────────────────────────────────────── */
+
+/* Кнопка подсказки в шапке урока */
+.lesson-hint-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 14px;
+    padding: 4px 10px;
+    font-size: 13px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.25s;
+    white-space: nowrap;
+    font-weight: 600;
+}
+.lesson-hint-btn:hover {
+    background: rgba(251,191,36,0.2);
+    border-color: var(--neon-yellow, #fbbf24);
+    transform: scale(1.05);
+}
+.lesson-hint-btn.used {
+    opacity: 0.4;
+    pointer-events: none;
+    border-color: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+}
+
+/* Индикатор уровня сложности */
+.difficulty-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    font-size: 12px;
+    font-weight: 700;
+    color: #fbbf24;
+    white-space: nowrap;
+    cursor: default;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+.difficulty-badge.level-up {
+    animation: diffPulse 0.6s ease;
+}
+@keyframes diffPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); background: rgba(255, 215, 0, 0.35); }
+}
+
+/* Тултип подсказки */
+.hint-tooltip {
+    position: relative;
+    margin-top: 8px;
+    padding: 8px 14px;
+    background: rgba(251,191,36,0.15);
+    border: 1px solid rgba(251,191,36,0.35);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--neon-yellow, #fbbf24);
+    text-align: center;
+    animation: hintFadeIn 0.3s ease;
+}
+@keyframes hintFadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Подсветка правильного варианта */
+.hint-highlight {
+    border-color: var(--neon-yellow, #fbbf24) !important;
+    box-shadow: 0 0 10px rgba(251,191,36,0.5) !important;
+    animation: hintPulse 0.6s ease 2;
+}
+@keyframes hintPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(251,191,36,0.5); }
+    50% { box-shadow: 0 0 16px rgba(251,191,36,0.8); }
+}
+
+/* Объяснение с подсказкой */
+.lesson-explanation.hint,
+.explanation-box.hint {
+    border-left-color: var(--neon-yellow, #fbbf24) !important;
+    background: rgba(251,191,36,0.08) !important;
+}
+
+/* Босс-фидбек с подсказкой */
+.boss-feedback.hint {
+    color: var(--neon-yellow, #fbbf24);
+    font-weight: 600;
+    animation: hintFadeIn 0.3s ease;
+}
+
+/* Тематические вариации для hint в тёмных темах */
+body.theme-forest .hint-highlight,
+body.theme-underwater .hint-highlight,
+body.theme-space .hint-highlight {
+    border-color: #fbbf24 !important;
+    box-shadow: 0 0 10px rgba(251,191,36,0.5) !important;
+}
+body.theme-space .hint-tooltip {
+    background: rgba(251,191,36,0.1);
+    border-color: rgba(251,191,36,0.25);
+}
+body.theme-forest .hint-tooltip {
+    background: rgba(251,191,36,0.12);
+    border-color: rgba(251,191,36,0.3);
+}
+body.theme-underwater .hint-tooltip {
+    background: rgba(251,191,36,0.1);
+    border-color: rgba(251,191,36,0.25);
+}
+
+/* ══════════ 3D-КОТ ДЛЯ ПРОФИЛЯ ══════════ */
+:root {
+    --kitty-bg: #F8FAFC;
+    --kitty-body: #F59E0B;
+    --kitty-body-dark: #D97706;
+    --kitty-belly: #FEF3C7;
+    --kitty-ear-inner: #FCA5A5;
+    --kitty-eyes: #1E293B;
+    --kitty-nose: #F472B6;
+    --kitty-blush: rgba(244,114,182,0.25);
+}
+.kitty-3d-scene {
+    width: 260px; height: 280px;
+    margin: 0 auto 12px;
+    perspective: 600px;
+    cursor: grab;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+}
+.kitty-3d-scene:active { cursor: grabbing; }
+
+.kitty-3d-cat {
+    width: 160px; height: 180px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out;
+    /* по умолчанию без шляпы и очков */
+}
+
+/* ══════════ СЛОИ ══════════ */
+.kitty-layer {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    transition: transform 0.1s ease-out, opacity 0.5s ease;
+}
+.kitty-hat-layer { z-index: 60; transform: translateZ(40px); }
+.kitty-ears-layer { z-index: 50; transform: translateZ(25px); }
+.kitty-head-layer { z-index: 40; transform: translateZ(15px); }
+.kitty-glasses-layer { z-index: 35; transform: translateZ(18px); }
+.kitty-body-layer { z-index: 30; transform: translateZ(0px); }
+.kitty-back-paws-layer { z-index: 20; transform: translateZ(-8px); }
+.kitty-front-paws-layer { z-index: 10; transform: translateZ(-15px); }
+
+.kitty-3d-cat.petted {
+    animation: kittyPurr 0.6s ease;
+}
+@keyframes kittyPurr {
+    0%{transform:translateX(0) rotateX(0) rotateY(0)}
+    25%{transform:translateX(-4px) rotateX(2deg) rotateY(-3deg)}
+    50%{transform:translateX(4px) rotateX(-2deg) rotateY(3deg)}
+    75%{transform:translateX(-2px) rotateX(1deg) rotateY(-1deg)}
+    100%{transform:translateX(0) rotateX(0) rotateY(0)}
+}
+
+/* ══════════ ГОЛОВА ══════════ */
+.kitty-head {
+    width: 100px; height: 88px;
+    background: var(--kitty-body);
+    border-radius: 50% 50% 48% 48%;
+    position: absolute;
+    top: 42px; left: 50%;
+    transform: translateX(-50%);
+    transition: background 0.5s ease;
+    overflow: visible;
+}
+
+/* Полоски на лбу */
+.kitty-forehead-stripes {
+    position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+    width: 40px; height: 16px;
+}
+.stripe {
+    position: absolute; height: 3px;
+    background: var(--kitty-body-dark);
+    border-radius: 2px;
+    transition: background 0.5s ease;
+}
+.s1 { width: 20px; top: 0; left: 50%; transform: translateX(-50%) rotate(0deg); }
+.s2 { width: 14px; top: 6px; left: 4px; transform: rotate(-15deg); }
+.s3 { width: 14px; top: 6px; right: 4px; transform: rotate(15deg); }
+
+/* Щёки */
+.kitty-cheek {
+    position: absolute;
+    width: 28px; height: 20px;
+    background: var(--kitty-body);
+    border-radius: 50%;
+    top: 38px;
+    transition: background 0.5s ease;
+}
+.cheek-l { left: -8px; }
+.cheek-r { right: -8px; }
+
+/* Румянец */
+.kitty-blush {
+    position: absolute;
+    width: 16px; height: 10px;
+    background: var(--kitty-blush);
+    border-radius: 50%;
+    top: 40px;
+    filter: blur(2px);
+    transition: background 0.5s ease;
+}
+.blush-l { left: 12px; }
+.blush-r { right: 12px; }
+
+/* Глаза */
+.kitty-eye {
+    position: absolute;
+    width: 22px; height: 22px;
+    background: white;
+    border-radius: 50%;
+    top: 28px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    transition: background 0.5s ease;
+    overflow: hidden;
+}
+.eye-left { left: 16px; }
+.eye-right { right: 16px; }
+
+/* Веко */
+.kitty-eyelid {
+    position: absolute; top: -2px; left: -2px; right: -2px;
+    height: 10px;
+    background: var(--kitty-body);
+    border-radius: 0 0 50% 50%;
+    z-index: 2;
+    transition: background 0.5s ease;
+}
+
+.kitty-pupil {
+    width: 11px; height: 14px;
+    background: var(--kitty-eyes);
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.1s ease;
+}
+.kitty-eye-shine {
+    position: absolute;
+    width: 5px; height: 5px;
+    background: white;
+    border-radius: 50%;
+    top: 4px; right: 4px;
+    z-index: 3;
+}
+
+/* Нос */
+.kitty-nose {
+    position: absolute;
+    top: 44px; left: 50%;
+    transform: translateX(-50%);
+    width: 16px; height: 11px;
+    background: var(--kitty-nose);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    transition: background 0.5s ease;
+    z-index: 5;
+}
+
+/* Рот */
+.kitty-mouth {
+    position: absolute;
+    top: 53px; left: 50%; transform: translateX(-50%);
+    width: 28px; height: 14px;
+}
+.kitty-mouth-center {
+    position: absolute; left: 50%; top: 0;
+    transform: translateX(-50%);
+    width: 2px; height: 8px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 1px;
+}
+.kitty-mouth-left, .kitty-mouth-right {
+    position: absolute;
+    top: 6px;
+    width: 11px; height: 7px;
+    border-bottom: 2px solid rgba(0,0,0,0.2);
+    border-radius: 0 0 8px 8px;
+}
+.kitty-mouth-left { left: 0; }
+.kitty-mouth-right { right: 0; }
+
+/* Усы */
+.kitty-whiskers { position: absolute; width: 100%; height: 100%; }
+.whisker {
+    position: absolute;
+    height: 1.5px;
+    background: rgba(255,255,255,0.55);
+    border-radius: 1px;
+    transform-origin: center center;
+}
+.wl1 { width: 34px; top: 42px; left: -22px; transform: rotate(-8deg); }
+.wl2 { width: 30px; top: 48px; left: -20px; transform: rotate(2deg); }
+.wl3 { width: 26px; top: 54px; left: -18px; transform: rotate(10deg); }
+.wr1 { width: 34px; top: 42px; right: -22px; transform: rotate(8deg); }
+.wr2 { width: 30px; top: 48px; right: -20px; transform: rotate(-2deg); }
+.wr3 { width: 26px; top: 54px; right: -18px; transform: rotate(-10deg); }
+
+/* ══════════ УШИ ══════════ */
+.kitty-ear {
+    position: absolute;
+    width: 26px; height: 30px;
+    background: var(--kitty-body);
+    border-radius: 80% 20% 50% 50%;
+    transition: background 0.5s ease;
+    overflow: hidden;
+}
+.ear-left { top: 16px; left: 18px; transform: rotate(-16deg); }
+.ear-right { top: 16px; right: 18px; transform: rotate(16deg); }
+
+/* Внутренняя часть уха */
+.kitty-ear-inner {
+    position: absolute;
+    bottom: 4px; left: 50%;
+    transform: translateX(-50%);
+    width: 16px; height: 18px;
+    background: var(--kitty-ear-inner);
+    border-radius: 70% 30% 50% 50%;
+    transition: background 0.5s ease;
+}
+.ear-left .kitty-ear-inner {
+    left: auto; right: 2px;
+    border-radius: 30% 70% 50% 50%;
+}
+
+/* ══════════ ТЕЛО ══════════ */
+.kitty-body-oval {
+    width: 84px; height: 72px;
+    background: var(--kitty-body);
+    border-radius: 44% 44% 48% 48%;
+    position: absolute;
+    top: 84px; left: 50%;
+    transform: translateX(-50%);
+    transition: background 0.5s ease;
+    overflow: visible;
+}
+
+/* Пузико */
+.kitty-belly {
+    position: absolute;
+    bottom: 2px; left: 50%;
+    transform: translateX(-50%);
+    width: 52px; height: 44px;
+    background: var(--kitty-belly);
+    border-radius: 50%;
+    transition: background 0.5s ease;
+}
+
+/* Хвост */
+.kitty-tail {
+    position: absolute;
+    width: 40px; height: 12px;
+    background: var(--kitty-body);
+    border-radius: 50%;
+    top: 112px; right: 10px;
+    transform: rotate(30deg);
+    transition: background 0.5s ease;
+    transform-origin: left center;
+    animation: tailWag 3s ease-in-out infinite;
+}
+.kitty-tail::before {
+    content: '';
+    position: absolute;
+    right: -10px; top: -6px;
+    width: 20px; height: 20px;
+    background: var(--kitty-body);
+    border-radius: 50%;
+    transition: background 0.5s ease;
+}
+.kitty-tail::after {
+    content: '';
+    position: absolute;
+    right: -4px; top: -2px;
+    width: 10px; height: 10px;
+    background: var(--kitty-belly);
+    border-radius: 50%;
+    transition: background 0.5s ease;
+}
+
+@keyframes tailWag {
+    0%, 100% { transform: rotate(30deg); }
+    25% { transform: rotate(45deg); }
+    75% { transform: rotate(15deg); }
+}
+
+/* ══════════ ЛАПЫ ══════════ */
+.kitty-paw {
+    position: absolute;
+    width: 26px; height: 16px;
+    background: var(--kitty-body);
+    border-radius: 50%;
+    transition: background 0.5s ease;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.08);
+}
+/* Пальчики */
+.kitty-paw::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 50%;
+    transform: translateX(-50%);
+    width: 10px; height: 4px;
+    border-radius: 2px;
+    background: var(--kitty-body-dark);
+    opacity: 0.3;
+    transition: background 0.5s ease;
+}
+.paw-fl { left: 20px; bottom: 14px; }
+.paw-fr { right: 20px; bottom: 14px; }
+.paw-bl { left: 12px; bottom: 2px; width: 22px; height: 14px; }
+.paw-br { right: 12px; bottom: 2px; width: 22px; height: 14px; }
+
+/* ══════════ ОЧКИ ══════════ */
+.kitty-glasses, .kitty-glasses-cool {
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+/* Круглые очки */
+.kitty-glass {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid #334155;
+    background: rgba(200,220,255,0.25);
+    top: 0;
+}
+.glass-l { left: -28px; }
+.glass-r { right: -28px; }
+.kitty-glass-bridge {
+    position: absolute;
+    width: 12px; height: 2px;
+    background: #334155;
+    top: 10px; left: -6px;
+}
+/* Стильные очки */
+.kitty-glasses-cool {
+    opacity: 0;
+}
+.cool-lens {
+    position: absolute;
+    width: 26px; height: 16px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+    border: 2px solid #0F172A;
+    top: 2px;
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.1);
+}
+.lens-l { left: -30px; }
+.lens-r { right: -30px; }
+.cool-bridge {
+    position: absolute;
+    width: 10px; height: 3px;
+    background: #0F172A;
+    border-radius: 2px;
+    top: 8px; left: -5px;
+}
+
+/* ══════════ ШЛЯПЫ ══════════ */
+.kitty-hat { display: none; position: absolute; }
+.kitty-hat-crown, .kitty-hat-cap, .kitty-hat-wizard { pointer-events: none; }
+
+/* Корона */
+.kitty-crown-base {
+    width: 44px; height: 14px;
+    background: linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%);
+    border-radius: 4px;
+    position: relative;
+}
+.kitty-crown-spike {
+    position: absolute;
+    width: 0; height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 14px solid #FBBF24;
+    top: -12px;
+}
+.spike1 { left: 2px; }
+.spike2 { left: 15px; }
+.spike3 { right: 2px; }
+
+/* Кепка */
+.kitty-cap-top {
+    width: 44px; height: 18px;
+    background: #3B82F6;
+    border-radius: 22px 22px 0 0;
+}
+.kitty-cap-visor {
+    width: 50px; height: 8px;
+    background: #1D4ED8;
+    border-radius: 0 0 14px 14px;
+    margin-left: -3px;
+    position: relative; top: -2px;
+}
+
+/* Колпак волшебника */
+.kitty-wizard-cone {
+    width: 0; height: 0;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-bottom: 42px solid #7C3AED;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    position: relative; left: 4px;
+}
+.kitty-wizard-brim {
+    width: 52px; height: 8px;
+    background: #5B21B6;
+    border-radius: 4px;
+    margin-top: -4px;
+    position: relative; left: -8px;
+}
+.kitty-wizard-star {
+    position: absolute;
+    top: -34px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    filter: drop-shadow(0 0 3px rgba(251,191,36,0.7));
+}
+
+/* Варианты шляп — видимость */
+.kitty-hat-crown .kitty-crown-base,
+.kitty-hat-crown .kitty-crown-spike { display: block; }
+.kitty-hat-cap .kitty-cap-top,
+.kitty-hat-cap .kitty-cap-visor { display: block; }
+.kitty-hat-wizard .kitty-wizard-cone,
+.kitty-hat-wizard .kitty-wizard-brim,
+.kitty-hat-wizard .kitty-wizard-star { display: block; }
+
+.kitty-3d-cat.hat-none .kitty-hat-layer { opacity: 0; }
+.kitty-3d-cat.hat-crown .kitty-hat-layer { opacity: 1; }
+.kitty-3d-cat.hat-cap .kitty-hat-layer { opacity: 1; }
+.kitty-3d-cat.hat-wizard .kitty-hat-layer { opacity: 1; }
+
+/* Варианты очков */
+.kitty-3d-cat.glasses-none .kitty-glasses-layer { opacity: 0; }
+.kitty-3d-cat.glasses-round .kitty-glasses-layer .kitty-glasses { opacity: 1; }
+.kitty-3d-cat.glasses-round .kitty-glasses-layer .kitty-glasses-cool { opacity: 0; }
+.kitty-3d-cat.glasses-cool .kitty-glasses-layer .kitty-glasses { opacity: 0; }
+.kitty-3d-cat.glasses-cool .kitty-glasses-layer .kitty-glasses-cool { opacity: 1; }
+
+/* Позиционируем шляпу над головой */
+.kitty-hat-layer > .kitty-hat {
+    display: block;
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+}
+
+/* ══════════ КНОПКИ КАСТОМИЗАЦИИ ══════════ */
+.kitty-controls {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.kitty-ctrl-btn {
+    padding: 8px 12px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 14px;
+    background: var(--card, #fff);
+    color: var(--text, #1E293B);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.kitty-ctrl-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.kitty-ctrl-btn:active { transform: scale(0.95); }
+body.theme-dark .kitty-ctrl-btn,
+body.theme-space .kitty-ctrl-btn {
+    border-color: rgba(255,255,255,0.1);
+    background: var(--card, #1E293B);
+    color: var(--text, #F1F5F9);
+}
+
+/* Тема: лес */
+body.theme-forest .kitty-3d-scene {
+    --kitty-bg: #F0FDF4;
+}
+/* Тема: космос */
+body.theme-space .kitty-3d-scene {
+    --kitty-bg: #0A0A1A;
+}
+body.theme-space .kitty-eye { background: #E2E8F0; }
+body.theme-space .kitty-pupil { background: #A855F7; }
+body.theme-space .kitty-pupil::after { background: #C084FC; }
+/* Тема: под водой */
+body.theme-underwater .kitty-3d-scene {
+    --kitty-bg: #E0F2FE;
+}
+
+/* Тёмные темы — усы поярче */
+body.theme-dark .whisker,
+body.theme-space .whisker {
+    background: rgba(255,255,255,0.5);
+}
+
+/* ══════════ 3D-КОТ (THREE.JS) В ПРОФИЛЕ ══════════ */
+.cat3d-container {
+    width: 100%;
+    height: 220px;
+    margin: 0 auto 8px;
+    cursor: grab;
+    border-radius: 16px;
+    overflow: hidden;
+    background: transparent;
+    position: relative;
+}
+.cat3d-container:active {
+    cursor: grabbing;
+}
+.cat3d-container canvas {
+    display: block;
+}
+
+/* ══════════ МАГАЗИН ══════════ */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+}
+.shop-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    border-radius: 14px;
+    background: var(--card, #fff);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.shop-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow, 0 4px 12px rgba(0,0,0,0.08));
+}
+.shop-item:active {
+    transform: scale(0.95);
+}
+.shop-item.shop-active {
+    border-color: var(--theme-primary, #3B82F6);
+    background: rgb(var(--theme-primary-rgb, 59,130,246) / 0.08);
+    box-shadow: 0 0 12px rgb(var(--theme-primary-rgb, 59,130,246) / 0.15);
+}
+.shop-item.shop-owned {
+    border-color: rgba(0,0,0,0.06);
+}
+.shop-item.shop-buyable {
+    border-color: var(--gold, #FBBF24);
+    background: var(--gold-light, #FEF3C7);
+}
+.shop-item-emoji {
+    font-size: 28px;
+    margin-bottom: 4px;
+    line-height: 1;
+}
+.shop-item-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text, #1E293B);
+    line-height: 1.2;
+}
+.shop-item-price {
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #92400E;
+    background: var(--gold, #FBBF24);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.shop-item-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 16px;
+    line-height: 1;
+    z-index: 2;
+}
+
+/* Тёмные темы — магазин */
+body.theme-dark .shop-item,
+body.theme-space .shop-item {
+    background: var(--card, #1E293B);
+    border-color: rgba(255,255,255,0.08);
+}
+body.theme-dark .shop-item.shop-active,
+body.theme-space .shop-item.shop-active {
+    border-color: var(--theme-primary, #818CF8);
+    background: rgb(var(--theme-primary-rgb, 129,140,248) / 0.12);
+}
+body.theme-dark .shop-item.shop-buyable,
+body.theme-space .shop-item.shop-buyable {
+    border-color: var(--gold, #FBBF24);
+    background: rgba(251,191,36,0.15);
+}
+body.theme-dark .shop-item-name,
+body.theme-space .shop-item-name {
+    color: var(--text, #F1F5F9);
+}
+
+/* ══════════ СЕТКА ТЕМ ══════════ */
+.theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 8px;
+}
+.theme-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 8px;
+    border-radius: 14px;
+    background: var(--card, #fff);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    position: relative;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.theme-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow, 0 4px 12px rgba(0,0,0,0.08));
+}
+.theme-card:active {
+    transform: scale(0.95);
+}
+.theme-card.active {
+    border-color: var(--theme-primary, #3B82F6);
+    background: rgb(var(--theme-primary-rgb, 59,130,246) / 0.08);
+    box-shadow: 0 0 12px rgb(var(--theme-primary-rgb, 59,130,246) / 0.15);
+}
+.theme-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-style: dashed;
+    border-color: rgba(0,0,0,0.1);
+}
+.theme-emoji {
+    font-size: 32px;
+    margin-bottom: 4px;
+    line-height: 1;
+}
+.theme-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text, #1E293B);
+    line-height: 1.2;
+}
+.theme-lock {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 14px;
+}
+
+/* Тёмные темы — карточки тем */
+body.theme-dark .theme-card,
+body.theme-space .theme-card {
+    background: var(--card, #1E293B);
+    border-color: rgba(255,255,255,0.08);
+}
+body.theme-dark .theme-card.active,
+body.theme-space .theme-card.active {
+    border-color: var(--theme-primary, #818CF8);
+    background: rgb(var(--theme-primary-rgb, 129,140,248) / 0.12);
+}
+body.theme-dark .theme-card.locked,
+body.theme-space .theme-card.locked {
+    border-color: rgba(255,255,255,0.1);
+}
+body.theme-dark .theme-name,
+body.theme-space .theme-name {
+    color: var(--text, #F1F5F9);
+}
+
+/* ══════════ КНОПКА СБРОСА ══════════ */
+.reset-progress-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 14px;
+    background: var(--card, #fff);
+    color: var(--red, #EF4444);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.reset-progress-btn:hover {
+    background: var(--red-light, #FEE2E2);
+    border-color: var(--red, #EF4444);
+}
+.reset-progress-btn:active {
+    transform: scale(0.97);
+}
+body.theme-dark .reset-progress-btn,
+body.theme-space .reset-progress-btn {
+    background: rgba(239,68,68,0.1);
+    border-color: rgba(239,68,68,0.25);
+    color: #FCA5A5;
+}
+body.theme-dark .reset-progress-btn:hover,
+body.theme-space .reset-progress-btn:hover {
+    background: rgba(239,68,68,0.2);
+    border-color: rgba(239,68,68,0.5);
 }
 

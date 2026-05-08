@@ -1,7 +1,24 @@
-export const STORAGE_KEY = 'kot_ucheniy_v15';
+// ──────────────────────────────────────────────
+//  КОНФИГУРАЦИЯ — v17 (ФГОС-полный набор навыков)
+// ──────────────────────────────────────────────
+
+export const STORAGE_KEY = 'kot_ucheniy_v17';
 export const TUTORIAL_KEY = 'kot_ucheniy_tutorial_done';
 
 export const SUBJECTS = { MATH: 'math', RUSSIAN: 'russian' };
+
+// Классы (группы сложности)
+export const CLASSES = {
+    C12: 'class12',  // 1–2 класс
+    C34: 'class34',  // 3–4 класс (2–4 по ФГОС, но мы группируем)
+    C56: 'class56'   // 5–6 класс (4–6 по ФГОС)
+};
+
+export const CLASS_INFO = {
+    [CLASSES.C12]: { name: '1–2 класс', emoji: '🌱', color: '#22C55E', desc: 'Базовые навыки' },
+    [CLASSES.C34]: { name: '3–4 класс', emoji: '🌿', color: '#F59E0B', desc: 'Средний уровень' },
+    [CLASSES.C56]: { name: '5–6 класс', emoji: '🌳', color: '#EF4444', desc: 'Продвинутый' }
+};
 
 export const GEMS = {
     CORRECT_ANSWER: 5, LESSON_XP_PER_CORRECT: 5, LESSON_PERFECT_BONUS: 25,
@@ -22,28 +39,111 @@ export const ACHIEVEMENTS_DEF = {
     erudite:    { name: '📚 Эрудит',      desc: 'Переключить предмет 5 раз', unlocked: false },
     firstBlood: { name: '💎 Первая кровь',desc: 'Ошибка → ловушки',        unlocked: false },
     student:    { name: '🎓 Ученик',      desc: 'Пройти 1 урок',           unlocked: false },
-    master:     { name: '🏅 Мастер',      desc: 'Урок без ошибок',         unlocked: false }
+    master:     { name: '🏅 Мастер',      desc: 'Урок без ошибок',         unlocked: false },
+    explorer:   { name: '🗺️ Исследователь', desc: 'Сменить класс 3 раза', unlocked: false },
+    olympian:   { name: '🥇 Олимпиец',    desc: 'Пройти все навыки класса', unlocked: false },
+    seasoned:   { name: '⭐ Матёрый',     desc: 'Пройти 5 уроков без ошибок', unlocked: false }
 };
 
-export const MATH_SKILLS = [
-    { id: 'add',  name: 'Сложение',           icon: '➕', color: '#3B82F6', progress: 0, status: 'current' },
-    { id: 'sub',  name: 'Вычитание',          icon: '➖', color: '#EF4444', progress: 0, status: 'locked' },
-    { id: 'mul',  name: 'Умножение',          icon: '✖️', color: '#F59E0B', progress: 0, status: 'locked' },
-    { id: 'div',  name: 'Деление',            icon: '➗', color: '#8B5CF6', progress: 0, status: 'locked' },
-    { id: 'eq',   name: 'Уравнения',          icon: '🔎', color: '#EC4899', progress: 0, status: 'locked' },
-    { id: 'geom', name: 'Периметр и площадь', icon: '📏', color: '#14B8A6', progress: 0, status: 'locked' },
-    { id: 'frac', name: 'Дроби',             icon: '🍕', color: '#F97316', progress: 0, status: 'locked' }
-];
+// ─── НАВЫКИ ПО КЛАССАМ (ФГОС) ───────────────
+// Математика
+export const MATH_SKILLS_BY_CLASS = {
+    [CLASSES.C12]: [
+        { id: 'add',          name: 'Сложение',            icon: '➕', color: '#3B82F6', progress: 0, status: 'current' },
+        { id: 'sub',          name: 'Вычитание',           icon: '➖', color: '#EF4444', progress: 0, status: 'locked' },
+        { id: 'mul_small',    name: 'Таблица × до 5',      icon: '✖️', color: '#F59E0B', progress: 0, status: 'locked' },
+        { id: 'div_small',    name: 'Таблица ÷ до 5',      icon: '➗', color: '#06B6D4', progress: 0, status: 'locked' },
+        { id: 'compare',      name: 'Сравнение чисел',     icon: '⚖️', color: '#8B5CF6', progress: 0, status: 'locked' },
+        { id: 'comp_num',     name: 'Состав числа',        icon: '🧩', color: '#EAB308', progress: 0, status: 'locked' },
+        { id: 'even_odd',     name: 'Чётные / нечётные',   icon: '🔢', color: '#F97316', progress: 0, status: 'locked' }
+    ],
+    [CLASSES.C34]: [
+        { id: 'mul',          name: 'Умножение',           icon: '✖️', color: '#F59E0B', progress: 0, status: 'current' },
+        { id: 'div',          name: 'Деление',             icon: '➗', color: '#8B5CF6', progress: 0, status: 'locked' },
+        { id: 'eq',           name: 'Уравнения',           icon: '🔎', color: '#EC4899', progress: 0, status: 'locked' },
+        { id: 'geom',         name: 'Периметр и площадь',  icon: '📏', color: '#14B8A6', progress: 0, status: 'locked' },
+        { id: 'order_ops',    name: 'Порядок действий',    icon: '🔢', color: '#A855F7', progress: 0, status: 'locked' },
+        { id: 'mul_table',    name: 'Таблица умножения',   icon: '📊', color: '#EF4444', progress: 0, status: 'locked' },
+        { id: 'len_units',    name: 'Единицы длины',       icon: '📏', color: '#22C55E', progress: 0, status: 'locked' },
+        { id: 'mass_units',   name: 'Единицы массы',       icon: '⚖️', color: '#EAB308', progress: 0, status: 'locked' },
+        { id: 'time_clock',   name: 'Время и часы',        icon: '🕐', color: '#06B6D4', progress: 0, status: 'locked' },
+        { id: 'money',        name: 'Деньги',              icon: '💰', color: '#F97316', progress: 0, status: 'locked' }
+    ],
+    [CLASSES.C56]: [
+        { id: 'frac',         name: 'Дроби',               icon: '🍕', color: '#F97316', progress: 0, status: 'current' },
+        { id: 'percent',      name: 'Проценты',            icon: '💯', color: '#06B6D4', progress: 0, status: 'locked' },
+        { id: 'neg',          name: 'Отрицательные числа', icon: '🌡️', color: '#A855F7', progress: 0, status: 'locked' },
+        { id: 'prop',         name: 'Пропорции',           icon: '⚡', color: '#EAB308', progress: 0, status: 'locked' },
+        { id: 'decimal',      name: 'Десятичные дроби',    icon: '🔢', color: '#EC4899', progress: 0, status: 'locked' },
+        { id: 'divisibility', name: 'Признаки делимости',  icon: '🔍', color: '#14B8A6', progress: 0, status: 'locked' },
+        { id: 'gcd_lcm',      name: 'НОД и НОК',           icon: '🧮', color: '#8B5CF6', progress: 0, status: 'locked' },
+        { id: 'coord',        name: 'Координатная прямая', icon: '📉', color: '#3B82F6', progress: 0, status: 'locked' },
+        { id: 'motion',       name: 'Задачи на движение',  icon: '🚗', color: '#EF4444', progress: 0, status: 'locked' }
+    ]
+};
 
-export const RUS_SKILLS = [
-    { id: 'zhishi',  name: 'ЖИ/ШИ, ЧА/ЩА, ЧУ/ЩУ',  icon: '✍️',  color: '#7C3AED', progress: 0, status: 'current' },
-    { id: 'soft',    name: 'Разделительный Ь и Ъ',   icon: '🧩', color: '#8B5CF6', progress: 0, status: 'locked' },
-    { id: 'vowel',   name: 'Безударные гласные',     icon: '🔎', color: '#F59E0B', progress: 0, status: 'locked' },
-    { id: 'silent',  name: 'Непроизносимые согласные',icon: '🗣️', color: '#EC4899', progress: 0, status: 'locked' },
-    { id: 'tsya',    name: '-ТСЯ/-ТЬСЯ',             icon: '🔄', color: '#14B8A6', progress: 0, status: 'locked' },
-    { id: 'prepri',  name: 'ПРЕ/ПРИ',                icon: '🎯', color: '#F97316', progress: 0, status: 'locked' },
-    { id: 'nn',      name: 'Н и НН',                 icon: '📋', color: '#EF4444', progress: 0, status: 'locked' }
-];
+// Русский язык
+export const RUS_SKILLS_BY_CLASS = {
+    [CLASSES.C12]: [
+        { id: 'zhishi',           name: 'ЖИ/ШИ, ЧА/ЩА, ЧУ/ЩУ', icon: '✍️', color: '#7C3AED', progress: 0, status: 'current' },
+        { id: 'soft',             name: 'Разделительный Ь и Ъ', icon: '🧩', color: '#8B5CF6', progress: 0, status: 'locked' },
+        { id: 'vowel',            name: 'Безударные гласные',   icon: '🔎', color: '#F59E0B', progress: 0, status: 'locked' },
+        { id: 'vocab',            name: 'Словарные слова',      icon: '📖', color: '#EC4899', progress: 0, status: 'locked' },
+        { id: 'paired_consonants',name: 'Парные звонкие/глухие',icon: '🔊', color: '#EF4444', progress: 0, status: 'locked' },
+        { id: 'word_wrap',        name: 'Перенос слов',         icon: '↩️', color: '#06B6D4', progress: 0, status: 'locked' },
+        { id: 'capital_letter',   name: 'Заглавная буква',      icon: '🔠', color: '#EAB308', progress: 0, status: 'locked' }
+    ],
+    [CLASSES.C34]: [
+        { id: 'silent',        name: 'Непроизносимые согласные',icon: '🗣️', color: '#EC4899', progress: 0, status: 'current' },
+        { id: 'tsya',          name: '-ТСЯ/-ТЬСЯ',              icon: '🔄', color: '#14B8A6', progress: 0, status: 'locked' },
+        { id: 'prepri',        name: 'ПРЕ/ПРИ',                 icon: '🎯', color: '#F97316', progress: 0, status: 'locked' },
+        { id: 'noun_case',     name: 'Падежи',                  icon: '📋', color: '#7C3AED', progress: 0, status: 'locked' },
+        { id: 'word_parts',    name: 'Состав слова',            icon: '🧱', color: '#F59E0B', progress: 0, status: 'locked' },
+        { id: 'same_root',     name: 'Однокоренные слова',      icon: '🌳', color: '#22C55E', progress: 0, status: 'locked' },
+        { id: 'syn_ant',       name: 'Синонимы / Антонимы',     icon: '🔄', color: '#A855F7', progress: 0, status: 'locked' },
+        { id: 'parts_speech',  name: 'Части речи',              icon: '🏷️', color: '#06B6D4', progress: 0, status: 'locked' },
+        { id: 'gender_num',    name: 'Род и число',             icon: '👥', color: '#EAB308', progress: 0, status: 'locked' },
+        { id: 'prep_pref',     name: 'Предлоги и приставки',    icon: '🔤', color: '#8B5CF6', progress: 0, status: 'locked' }
+    ],
+    [CLASSES.C56]: [
+        { id: 'nn',             name: 'Н и НН',                  icon: '📋', color: '#EF4444', progress: 0, status: 'current' },
+        { id: 'partic',         name: 'Причастия и деепричастия',icon: '📝', color: '#F59E0B', progress: 0, status: 'locked' },
+        { id: 'complex',        name: 'Сложные предложения',     icon: '🧵', color: '#8B5CF6', progress: 0, status: 'locked' },
+        { id: 'punct',          name: 'Пунктуация',              icon: '❗', color: '#EC4899', progress: 0, status: 'locked' },
+        { id: 'conjugation',    name: 'Спряжение глаголов',      icon: '🔄', color: '#F97316', progress: 0, status: 'locked' },
+        { id: 'alt_vowels',     name: 'Чередующиеся гласные',    icon: '〰️', color: '#14B8A6', progress: 0, status: 'locked' },
+        { id: 'oe_sibilant',    name: 'О/Ё после шипящих',       icon: '🔤', color: '#A855F7', progress: 0, status: 'locked' },
+        { id: 'ne_verbs',       name: 'НЕ с глаголами',          icon: '🚫', color: '#3B82F6', progress: 0, status: 'locked' },
+        { id: 'case_endings',   name: 'Падежные окончания',      icon: '📝', color: '#22C55E', progress: 0, status: 'locked' }
+    ]
+};
+
+// Плоские списки
+export const MATH_SKILLS = Object.values(MATH_SKILLS_BY_CLASS).flat();
+export const RUS_SKILLS = Object.values(RUS_SKILLS_BY_CLASS).flat();
+
+// Получить навыки для конкретного класса и предмета
+export function getSkillsForClass(subject, cls) {
+    if (subject === SUBJECTS.MATH) return MATH_SKILLS_BY_CLASS[cls] || [];
+    return RUS_SKILLS_BY_CLASS[cls] || [];
+}
+
+// Получить все навыки предмета
+export function getAllSkillsForSubject(subject) {
+    if (subject === SUBJECTS.MATH) return MATH_SKILLS;
+    return RUS_SKILLS;
+}
+
+// Узнать класс навыка по его id
+export function getClassForSkill(skillId) {
+    for (const cls of Object.values(CLASSES)) {
+        const m = MATH_SKILLS_BY_CLASS[cls].find(s => s.id === skillId);
+        if (m) return cls;
+        const r = RUS_SKILLS_BY_CLASS[cls].find(s => s.id === skillId);
+        if (r) return cls;
+    }
+    return CLASSES.C12;
+}
 
 export const CAT_SPEECH = {
     math: 'Мур! Математика!',
@@ -55,7 +155,6 @@ export const CAT_SPEECH = {
 };
 
 export const SUBJECT_EMOJI = { math: '🐱', russian: '😺' };
-
 export const DEFAULT_THEME = 'light';
 
 export const THEMES = {
@@ -101,5 +200,6 @@ export const getTheme = (id) => THEMES[id] || THEMES[DEFAULT_THEME];
 /** Сколько уроков пройдено (completed skills) */
 export const countCompletedLessons = (skills) => {
     if (!skills) return 0;
+    if (Array.isArray(skills)) return skills.filter(s => s && s.progress >= 100).length;
     return Object.values(skills).filter(s => s && s.progress >= 100).length;
 };

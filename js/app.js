@@ -3,7 +3,7 @@
 import { $, $$, showToast, spawnXP, playLottie } from './utils.js';
 import { state, loadState, saveState, unlockAchievement, checkAchievements, applyTheme, checkThemeUnlocks } from './state.js';
 import { SUBJECTS, CAT_SPEECH, SUBJECT_EMOJI, getTheme } from './config.js';
-import { renderSkillTree } from './components/skillTree.js';
+import { renderSkillTree, switchClass } from './components/skillTree.js';
 import { startLesson, closeLesson, nextLessonStep, checkSavedLesson } from './components/lesson.js';
 import { openStoryPanel, closeStory, nextStoryStep } from './components/story.js';
 import { renderTrapsPanel, updateTrapsBadge } from './components/trap.js';
@@ -171,6 +171,14 @@ function bindEvents() {
     $('#storyNextBtn').addEventListener('click', nextStoryStep);
     $('#storyCloseBtn').addEventListener('click', closeStory);
     $('#btnFinishStory').addEventListener('click', closeStory);
+
+    // Селектор классов
+    $$('#classSelector .class-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const cls = btn.dataset.class;
+            if (cls) switchClass(cls);
+        });
+    });
 }
 
 function updateDailyStreak() {
