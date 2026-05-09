@@ -147,6 +147,9 @@ export class Cat3D {
         this._shadowPlane = null;
         this._graduateModel = null;  // кеш загруженной шляпы выпускника
 
+        // Базовая Y-позиция модели (сохраняется после загрузки)
+        this._baseY = 0;
+
         // Анимации
         this._clock = new (typeof THREE !== 'undefined' && THREE.Clock ? THREE.Clock : function() { this.getDelta = () => 0.016; })();
         this._animTime = 0;
@@ -299,7 +302,7 @@ export class Cat3D {
         return new Promise((resolve, reject) => {
             const loader = new THREE.GLTFLoader();
             loader.load(
-                'assets/cat/scene 9.glb',
+                'assets/cat/cat.glb',
                 (gltf) => {
                     this._catModel = gltf.scene;
 
@@ -315,6 +318,8 @@ export class Cat3D {
                     // Центрируем модель
                     const center = box.getCenter(new THREE.Vector3());
                     this._catModel.position.set(-center.x * scale, -box.min.y * scale - 0.4, -center.z * scale);
+                    // Сохраняем базовую Y-позицию для анимации прыжка
+                    this._baseY = this._catModel.position.y;
 
                     // Ищем кости глаз для моргания
                     this._catModel.traverse((child) => {
@@ -322,6 +327,9 @@ export class Cat3D {
                             this._eyeBones.push(child);
                         }
                     });
+
+                    // Поворачиваем модель лицом к камере (камера на Z=4.5)
+                    this._catModel.rotation.y = Math.PI;
 
                     this.scene.add(this._catModel);
 
@@ -433,7 +441,7 @@ export class Cat3D {
         return new Promise((resolve) => {
             const loader = new THREE.GLTFLoader();
             loader.load(
-                'assets/hats/graduate.gltf',
+                'assets/hats/graduate.glb',
                 (gltf) => {
                     this._graduateModel = gltf.scene;
                     resolve(this._graduateModel);
@@ -804,10 +812,8 @@ export class Cat3D {
             if (this._isDragging) {
                 this._targetRotX = this._dragStartRotX + (my - this._dragStartY) * 0.8;
                 this._targetRotY = this._dragStartRotY + (mx - this._dragStartX) * 1.2;
-            } else {
-                this._targetRotX = my * 0.35;
-                this._targetRotY = mx * 0.6;
             }
+            // Без драга — ничего не делаем, модель остаётся на месте
         });
 
         canvas.addEventListener('mousedown', (e) => {
@@ -828,8 +834,6 @@ export class Cat3D {
         canvas.addEventListener('mouseleave', () => {
             this._isDragging = false;
             canvas.style.cursor = 'grab';
-            this._targetRotX = 0;
-            this._targetRotY = 0;
         });
 
         // Клик — прыжок
@@ -863,10 +867,6 @@ export class Cat3D {
 
         canvas.addEventListener('touchend', () => {
             this._isDragging = false;
-            if (!this._isDragging) {
-                this._targetRotX = 0;
-                this._targetRotY = 0;
-            }
         });
 
         // Ресайз
@@ -950,9 +950,9 @@ export class Cat3D {
 
         // ── Прыжок ──
         if (this._jumpOffset > 0.001 || this._jumpOffset < -0.001) {
-            this._catModel.position.y = this._jumpOffset;
-        } else if (this._catModel.position.y !== 0 && this._jumpOffset === 0) {
-            this._catModel.position.y = 0;
+            this._catModel.position.y = this._baseY + this._jumpOffset;
+        } else {
+            this._catModel.position.y = this._baseY;
         }
 
         // ── Моргание ──
