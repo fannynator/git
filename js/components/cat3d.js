@@ -314,6 +314,8 @@ export class Cat3D {
                     const targetSize = 2.6;
                     const scale = targetSize / (sizeY || 2);
                     this._catModel.scale.setScalar(scale);
+                    // Фиксируем базовый scale для анимации дыхания
+                    this._catModel.userData.baseScale = scale;
 
                     // Центрируем модель
                     const center = box.getCenter(new THREE.Vector3());
@@ -934,12 +936,11 @@ export class Cat3D {
         this._catModel.rotation.x = this._currentRotX;
         this._catModel.rotation.y = this._currentRotY;
 
-        // ── Дыхание (scale 1.0 → 1.02 → 1.0 за 3 секунды) ──
+        // ── Дыхание (scale ±1% за 3 секунды) ──
         this._breathePhase += dt * (Math.PI * 2 / 3);
-        const breatheScale = 1 + Math.sin(this._breathePhase) * 0.02;
-        if (this._catModel) {
-            const baseScale = this._catModel.userData?.baseScale || this._catModel.scale.x;
-            this._catModel.scale.setScalar(baseScale * breatheScale);
+        const breatheScale = 1 + Math.sin(this._breathePhase) * 0.01;
+        if (this._catModel && this._catModel.userData.baseScale) {
+            this._catModel.scale.setScalar(this._catModel.userData.baseScale * breatheScale);
         }
 
         // ── Покачивание (±2° по X, 4 секунды) ──
