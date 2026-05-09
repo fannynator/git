@@ -149,6 +149,8 @@ export class Cat3D {
 
         // Базовая Y-позиция модели (сохраняется после загрузки)
         this._baseY = 0;
+        // Половина высоты bounding box (для позиции тени)
+        this._modelHalfHeight = null;
 
         // Анимации
         this._clock = new (typeof THREE !== 'undefined' && THREE.Clock ? THREE.Clock : function() { this.getDelta = () => 0.016; })();
@@ -228,6 +230,7 @@ export class Cat3D {
         this.renderer.setClearColor(0x000000, 0);
 
         this._updateBgColor();
+        this._watchTheme();
 
         this.container.innerHTML = '';
         this.container.appendChild(this.renderer.domElement);
@@ -301,7 +304,20 @@ export class Cat3D {
             const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
             if (bg) this._bgColor = bg;
         } catch (e) { /* игнор */ }
-        this.renderer.domElement.style.background = this._bgColor || '#1a1a2e';
+        if (this.renderer.domElement) {
+            this.renderer.domElement.style.background = this._bgColor || '#1a1a2e';
+        }
+    }
+
+    _watchTheme() {
+        const observer = new MutationObserver(() => {
+            this._updateBgColor();
+        });
+        observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        this._themeObserver = observer;
     }
 
     // ─── Загрузка моделей ────────────────────────────────────
@@ -334,10 +350,13 @@ export class Cat3D {
                     // Центрируем модель: её геометрический центр должен быть в pivot (0,0,0)
                     this._catModel.position.set(-boxCenter.x, -boxCenter.y, -boxCenter.z);
 
-                    // Pivot — мировая позиция (подъём над «полом»)
+                    // Pivot — мировая позиция: кот «стоит» на полу (нижняя точка модели на Y=0)
                     const worldBottom = boxCenter.y - boxSize.y / 2;
-                    this._pivotGroup.position.set(0, -worldBottom, 0);
+                    // Поднимаем так, чтобы низ был чуть выше нуля (0.05 — отступ от пола)
+                    this._pivotGroup.position.set(0, -worldBottom + 0.05, 0);
                     this._baseY = this._pivotGroup.position.y;
+                    // Запоминаем половину высоты для позиционирования тени
+                    this._modelHalfHeight = boxSize.y / 2;
 
                     // Ищем кости глаз для моргания
                     this._catModel.traverse((child) => {
@@ -1019,9 +1038,9 @@ export class Cat3D {
             });
         }
 
-        // ── Тень следует за pivot'ом ──
-        if (this._shadowPlane && this._pivotGroup) {
-            this._shadowPlane.position.y = -1.5 + this._pivotGroup.position.y;
+        // ── Тень: чуть ниже низа модели ──
+        if (this._shadowPlane && this._pivotGroup && this._modelHalfHeight != null) {
+            this._shadowPlane.position.y = this._pivotGroup.position.y - this._modelHalfHeight - 0.02;
         }
     }
 
