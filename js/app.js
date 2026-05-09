@@ -4,6 +4,7 @@ import { $, $$, showToast, spawnXP, playAchievementAnim, safeGetItem, safeSetIte
 import { state, loadState, saveState, unlockAchievement, checkAchievements, applyTheme, checkThemeUnlocks } from './state.js';
 import { SUBJECTS, CAT_SPEECH, SUBJECT_EMOJI, getTheme } from './config.js';
 import { renderSkillTree, switchClass } from './components/skillTree.js';
+import { openAvatarPanel } from './components/avatarPanel.js';
 import { startLesson, closeLesson, nextLessonStep, checkSavedLesson } from './components/lesson.js';
 import { openStoryPanel, closeStory, nextStoryStep } from './components/story.js';
 import { renderTrapsPanel, updateTrapsBadge } from './components/trap.js';
@@ -228,6 +229,11 @@ function init() {
     updateStats();
     setupCatPet();
     bindEvents();
+    const catAvatar = $('#catAvatar');
+    if (catAvatar) {
+        catAvatar.style.cursor = 'pointer';
+        catAvatar.addEventListener('click', openAvatarPanel);
+    }
     startTutorial();
     setTimeout(() => checkSavedLesson(), 500);
     console.log('🐱 v15 — готов к мурчанию!');

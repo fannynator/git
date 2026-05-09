@@ -13,6 +13,7 @@ const JS_FILES = [
     'js/components/tutorial.js',
     'js/components/skillTree.js',
     'js/components/cat3d.js',
+    'js/components/avatarPanel.js',
     'js/components/lesson.js',
     'js/components/story.js',
     'js/components/trap.js',
