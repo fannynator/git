@@ -317,21 +317,26 @@ export class Cat3D {
                     // Подгоняем масштаб: кот должен занимать ~70% высоты 250px
                     // Камера на z=4.5 с fov=45 — видимая высота на z=0 примерно 3.7 единиц
                     // 70% от 3.7 ≈ 2.6 единиц. Подгоним bounding box.
-                    const box = new THREE.Box3().setFromObject(this._catModel);
+                    let box = new THREE.Box3().setFromObject(this._catModel);
                     const sizeY = box.max.y - box.min.y;
                     const targetSize = 2.1;
                     const scale = targetSize / (sizeY || 2);
                     this._catModel.scale.setScalar(scale);
-                    // Фиксируем базовый scale для анимации дыхания
                     this._catModel.userData.baseScale = scale;
 
-                    // Центрируем модель внутри pivot (визуальный центр в 0,0,0)
-                    const center = box.getCenter(new THREE.Vector3());
-                    this._catModel.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
-                    // Модель внутри pivot: позиция = смещение от её геометрического центра
-                    // Pivot задаёт мировую позицию (подъём над полом)
-                    this._pivotGroup.position.set(0, -box.min.y * scale - 0.4, 0);
-                    // Сохраняем базовую Y-позицию pivot для анимации прыжка
+                    // Пересчитываем bounding box ПОСЛЕ масштабирования
+                    this._catModel.updateWorldMatrix(true, false);
+                    box = new THREE.Box3().setFromObject(this._catModel);
+
+                    const boxSize = box.getSize(new THREE.Vector3());
+                    const boxCenter = box.getCenter(new THREE.Vector3());
+
+                    // Центрируем модель: её геометрический центр должен быть в pivot (0,0,0)
+                    this._catModel.position.set(-boxCenter.x, -boxCenter.y, -boxCenter.z);
+
+                    // Pivot — мировая позиция (подъём над «полом»)
+                    const worldBottom = boxCenter.y - boxSize.y / 2;
+                    this._pivotGroup.position.set(0, -worldBottom, 0);
                     this._baseY = this._pivotGroup.position.y;
 
                     // Ищем кости глаз для моргания
@@ -341,11 +346,10 @@ export class Cat3D {
                         }
                     });
 
-                    // Поворачиваем модель лицом к камере (камера на Z=4.5)
-                    // Модель по умолчанию смотрит по +X, лицом к камере (Z+)
-                    this._catModel.rotation.y = -Math.PI / 2;
+                    // Поворот лицом к камере — на pivot, не на модели
+                    this._pivotGroup.rotation.y = -Math.PI / 2;
 
-                    // Модель внутри pivot
+                    // Модель внутри pivot (без собственного вращения)
                     this._pivotGroup.add(this._catModel);
 
                     resolve();
@@ -942,7 +946,8 @@ export class Cat3D {
         this._currentRotY += (this._targetRotY - this._currentRotY) * Math.min(rotSpeed * dt, 1);
         this._currentRotX += (this._targetRotX - this._currentRotX) * Math.min(rotSpeed * dt, 1);
         if (pivot) {
-            pivot.rotation.y = this._currentRotY;
+            // База: модель изначально повёрнута на -PI/2 (лицом к камере)
+            pivot.rotation.y = -Math.PI / 2 + this._currentRotY;
             pivot.rotation.x = this._currentRotX;
         }
 
