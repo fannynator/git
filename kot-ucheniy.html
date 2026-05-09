@@ -1349,7 +1349,8 @@ function generateAddLesson() {
         const [bMin2, bMax2] = adaptiveRange(10, 30, DIFF_STEP);
         const a2 = rnd(bMin2, bMax2), a3 = rnd(1, a2 - 1);
         const [bMin3, bMax3] = adaptiveRange(10, 50, DIFF_STEP);
-        const a4 = rnd(bMin3, bMax3), a5 = rnd(pMin, pMax), a6 = rnd(5, 15);
+        const [pMinB, pMaxB] = adaptiveRange(5, 20, DIFF_STEP);
+        const a4 = rnd(bMin3, bMax3), a5 = rnd(pMinB, pMaxB), a6 = rnd(5, 15);
         t.push(bossT('⭐', 'Босс', 'badge-boss', 'Реши несколько задач на сложение:', [
             { label: `${a1} + ${b1}`, correctAns: add(a1, b1), hint: `Складываем: ${a1} + ${b1} = ${add(a1, b1)}` },
             { label: `${a2} + ${a3}`, correctAns: add(a2, a3), hint: `${a2} + ${a3} = ${add(a2, a3)}` },
@@ -5228,7 +5229,7 @@ function renderSkillTree() {
 
 /* === js/components/cat3d.js === */
 // js/components/cat3d.js
-// 3D Кот на Three.js (CDN: three.min.js) с магазином кастомизации
+// 3D Кот на Three.js (CDN: three.min.js) — мультяшная модель с магазином кастомизации
 
 const HAT_TYPES = {
     none:    { name: 'Без шляпы', price: 0, emoji: '🐱' },
@@ -5281,7 +5282,6 @@ function loadThree() {
             return;
         }
         if (THREE_LOADING) {
-            // Ждём
             const check = setInterval(() => {
                 if (typeof THREE !== 'undefined' && THREE.Scene) {
                     clearInterval(check);
@@ -5303,6 +5303,98 @@ function loadThree() {
     });
 }
 
+// ─── Helper: создание outline-оболочки (мультяшный контур) ──────
+function addOutline(mesh, group, scale = 1.03) {
+    const outlineGeo = mesh.geometry.clone();
+    const outlineMat = new THREE.MeshBasicMaterial({ color: '#1E293B', side: THREE.BackSide });
+    const outline = new THREE.Mesh(outlineGeo, outlineMat);
+    outline.scale.setScalar(scale);
+    group.add(outline);
+    return outline;
+}
+
+// ─── Helper: создание shell-слоёв для пушистости ────────────────
+function addFurShell(mesh, group, colorHex) {
+    const shells = [];
+    const offsets = [0.02, 0.04, 0.06];
+    const opacities = [0.15, 0.08, 0.04];
+    offsets.forEach((offset, i) => {
+        const shellGeo = mesh.geometry.clone();
+        const shellMat = new THREE.MeshBasicMaterial({
+            color: colorHex,
+            transparent: true,
+            opacity: opacities[i],
+            depthWrite: false
+        });
+        const shell = new THREE.Mesh(shellGeo, shellMat);
+        shell.scale.setScalar(1 + offset);
+        shell.userData = { baseScale: 1 + offset, index: i };
+        group.add(shell);
+        shells.push(shell);
+    });
+    return shells;
+}
+
+// ─── Helper: генерация текстуры шерсти (canvas) ─────────────────
+function generateFurTexture(baseColor, stripeColor) {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    // Базовый цвет
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(0, 0, size, size);
+
+    // Тигриные полоски
+    ctx.strokeStyle = stripeColor;
+    ctx.lineWidth = 4;
+    ctx.shadowColor = stripeColor;
+    ctx.shadowBlur = 2;
+
+    const stripes = [
+        [20, 0, 60, 256],
+        [100, 0, 80, 256],
+        [180, 0, 70, 256],
+        [240, 0, 50, 256],
+        [0, 40, 256, 50],
+        [0, 120, 256, 50],
+        [0, 200, 256, 50],
+    ];
+
+    stripes.forEach(([x1, y1, x2, y2]) => {
+        ctx.beginPath();
+        // Добавляем изгиб
+        const midX = (x1 + x2) / 2 + (Math.random() - 0.5) * 30;
+        const midY = (y1 + y2) / 2 + (Math.random() - 0.5) * 30;
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(midX, midY, x2, y2);
+        ctx.stroke();
+    });
+
+    ctx.shadowBlur = 0;
+
+    // Лёгкая ворсистость
+    ctx.fillStyle = baseColor;
+    ctx.globalAlpha = 0.3;
+    for (let i = 0; i < 500; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        ctx.beginPath();
+        ctx.arc(x, y, 1 + Math.random() * 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapU = THREE.RepeatWrapping;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+}
+
 // ─── Класс Cat3D ────────────────────────────────────────────────
 
 class Cat3D {
@@ -5310,7 +5402,6 @@ class Cat3D {
      * @param {HTMLElement} container - DOM-элемент для вставки сцены
      * @param {object} state - ссылка на state из state.js
      * @param {function} saveState - функция saveState из state.js
-     * @param {function} showToast - функция показа тостов
      */
     constructor(container, state, saveState) {
         this.container = container;
@@ -5319,10 +5410,13 @@ class Cat3D {
         this.scene = null;
         this.camera = null;
         this.renderer = null;
-        this.catGroup = new THREE.Group(); // заглушка
+        this.catGroup = null;
+        this.headGroup = null;
+        this.bodyGroup = null;
         this.hatGroup = new THREE.Group();
         this.glassesGroup = new THREE.Group();
         this.accessoryGroup = new THREE.Group();
+        this.emotionGroup = new THREE.Group(); // языки, брови и т.д.
         this.particles = [];
         this.clock = new THREE.Clock();
         this.animTime = 0;
@@ -5343,7 +5437,31 @@ class Cat3D {
         this._earTwitchTimer = 0;
         this._jumpOffset = 0;
         this._spinAngle = 0;
+        this._currentEmotion = 'normal';
+        this._mouthOpenAmount = 0;
+        this._targetMouthOpen = 0;
+        this._isSpeaking = false;
+        this._speakTimer = 0;
+        this._eatingProgress = 0;
 
+        // Ссылки на части для анимаций
+        this.earLeft = null;
+        this.earRight = null;
+        this.earInnerL = null;
+        this.earInnerR = null;
+        this.eyeL = null;
+        this.eyeR = null;
+        this.eyelidL = null;
+        this.eyelidR = null;
+        this.tailGroup = null;
+        this.mouthParts = [];
+        this.tongue = null;
+        this.pawFL = null;
+        this.pawFR = null;
+        this.furShells = [];
+        this.headMesh = null;
+        this.bodyMesh = null;
+        this.bellyMesh = null;
         this.hatParts = {};
         this.glassesParts = {};
         this.accessoryParts = {};
@@ -5376,8 +5494,8 @@ class Cat3D {
         this.camera.position.set(0, 0, 7);
         this.camera.lookAt(0, 0, 0);
 
-        this.renderer = new THREE.WebGLRenderer({ 
-            antialias: true, 
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
             alpha: true,
             powerPreference: 'high-performance'
         });
@@ -5389,13 +5507,13 @@ class Cat3D {
 
         this.container.innerHTML = '';
         this.container.appendChild(this.renderer.domElement);
-        this.renderer.domElement.style.display = 'block';
         this.renderer.domElement.style.width = '100%';
         this.renderer.domElement.style.height = '100%';
         this.renderer.domElement.style.cursor = 'grab';
     }
 
     setupLights() {
+        // Освещение
         const ambient = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambient);
 
@@ -5408,328 +5526,353 @@ class Cat3D {
         dirLight.shadow.camera.far = 50;
         this.scene.add(dirLight);
 
-        const fillLight = new THREE.DirectionalLight(0xffeedd, 0.3);
-        fillLight.position.set(-3, -2, 3);
-        this.scene.add(fillLight);
+        // Тень под котом
+        const shadowGeo = new THREE.PlaneGeometry(3, 3);
+        const shadowCanvas = document.createElement('canvas');
+        shadowCanvas.width = 256;
+        shadowCanvas.height = 256;
+        const sctx = shadowCanvas.getContext('2d');
+        const gradient = sctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+        gradient.addColorStop(0, 'rgba(0,0,0,0.4)');
+        gradient.addColorStop(0.5, 'rgba(0,0,0,0.15)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+        sctx.fillStyle = gradient;
+        sctx.fillRect(0, 0, 256, 256);
+        const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+        const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
+        const shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
+        shadowPlane.position.y = -2.4;
+        shadowPlane.rotation.x = -Math.PI / 2;
+        shadowPlane.renderOrder = 1;
+        this.scene.add(shadowPlane);
+        this.shadowPlane = shadowPlane;
     }
 
-    // ─── Построение кота ──────────────────────────────────────────
+    // ─── ПОСТРОЕНИЕ КОТА ──────────────────────────────────────
 
     buildCat() {
-        const furColor = SKIN_TYPES.orange.hex;
-        const bellyColor = '#FEF3C7';
-
-        // Группа кота
         this.catGroup = new THREE.Group();
+        this.headGroup = new THREE.Group();
+        this.bodyGroup = new THREE.Group();
 
-        // ─── ТЕЛО (грушевидное, сидячее) ───
-        const bodyGroup = new THREE.Group();
-        // Основа — сфера, вытянутая вверх (грушевидная форма)
-        const bodyGeo = new THREE.SphereGeometry(0.75, 20, 20);
-        bodyGeo.scale(1, 1.35, 0.75);
-        const bodyMat = new THREE.MeshToonMaterial({ color: furColor });
-        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        bodyMesh.position.y = -0.95;
-        bodyMesh.castShadow = true;
-        bodyMesh.receiveShadow = true;
-        bodyGroup.add(bodyMesh);
-        this.bodyMesh = bodyMesh;
+        const furColor = '#F59E0B';
+        const stripeColor = '#D97706';
+        const bellyColor = '#FEF3C7';
+        const cheekBlushColor = '#FECACA';
+        const noseColor = '#F472B6';
+        const earInnerColor = '#FECACA';
+        const eyeWhiteColor = '#FFFFFF';
+        const irisColor = '#10B981';
+        const pupilColor = '#1E293B';
+        const mouthColor = '#BE185D';
+        const whiskerColor = '#CBD5E1';
+        const pawPadColor = '#FECACA';
 
-        // Нижняя часть тела (более широкая, "сидячая" попа)
-        const lowerBodyGeo = new THREE.SphereGeometry(0.6, 16, 16);
-        lowerBodyGeo.scale(1.1, 0.7, 0.85);
-        const lowerBody = new THREE.Mesh(lowerBodyGeo, bodyMat);
-        lowerBody.position.y = -1.55;
-        lowerBody.castShadow = true;
-        bodyGroup.add(lowerBody);
+        // ── Генерация текстуры шерсти ──
+        this.furTexture = generateFurTexture(furColor, stripeColor);
 
-        // Пузико
-        const bellyGeo = new THREE.SphereGeometry(0.5, 14, 14);
-        bellyGeo.scale(1, 0.8, 0.55);
-        const bellyMat = new THREE.MeshToonMaterial({ color: bellyColor });
-        const bellyMesh = new THREE.Mesh(bellyGeo, bellyMat);
-        bellyMesh.position.set(0, -1.05, 0.5);
-        bodyGroup.add(bellyMesh);
-
-        bodyGroup.position.y = 0;
-        this.catGroup.add(bodyGroup);
-        this.bodyGroup = bodyGroup;
-
-        // ─── ШЕЯ ───
-        const neckGeo = new THREE.CylinderGeometry(0.2, 0.28, 0.35, 12);
-        const neckMat = new THREE.MeshToonMaterial({ color: furColor });
-        const neckMesh = new THREE.Mesh(neckGeo, neckMat);
-        neckMesh.position.y = -0.2;
-        this.catGroup.add(neckMesh);
-
-        // ─── ГОЛОВА (широкая, приплюснутая — кошачья) ───
-        const headGroup = new THREE.Group();
-        headGroup.position.y = 0.05;
-
-        // Основная сфера головы — шире чем выше
-        const headGeo = new THREE.SphereGeometry(0.6, 20, 20);
-        headGeo.scale(1.2, 0.85, 1.0);
-        const headMat = new THREE.MeshToonMaterial({ color: furColor });
+        // ── ГОЛОВА ──
+        // Основная сфера
+        const headGeo = new THREE.SphereGeometry(1.2, 32, 32);
+        const headMat = new THREE.MeshToonMaterial({ color: furColor, map: this.furTexture });
         const headMesh = new THREE.Mesh(headGeo, headMat);
+        headMesh.scale.set(1, 0.85, 1);
         headMesh.castShadow = true;
-        headGroup.add(headMesh);
+        this.headGroup.add(headMesh);
+        this.headMesh = headMesh;
 
-        // Нижняя челюсть — дополнительный объём снизу
-        const jawGeo = new THREE.SphereGeometry(0.35, 14, 14);
-        jawGeo.scale(1.0, 0.55, 0.7);
-        const jawMesh = new THREE.Mesh(jawGeo, headMat);
-        jawMesh.position.set(0, -0.28, 0.15);
-        headGroup.add(jawMesh);
+        // Outlines + fur shells для головы
+        addOutline(headMesh, this.headGroup, 1.035);
+        this.headShells = addFurShell(headMesh, this.headGroup, furColor);
 
         // Щёки
-        const cheekGeo = new THREE.SphereGeometry(0.22, 12, 12);
-        const cheekMat = new THREE.MeshToonMaterial({ color: bellyColor });
+        const cheekGeo = new THREE.SphereGeometry(0.5, 24, 24);
+        const cheekMat = new THREE.MeshToonMaterial({ color: furColor });
         const cheekL = new THREE.Mesh(cheekGeo, cheekMat);
-        cheekL.position.set(-0.4, -0.08, 0.45);
-        headGroup.add(cheekL);
-        const cheekR = new THREE.Mesh(cheekGeo, cheekMat);
-        cheekR.position.set(0.4, -0.08, 0.45);
-        headGroup.add(cheekR);
+        cheekL.position.set(-0.8, -0.3, 0.1);
+        this.headGroup.add(cheekL);
+        addFurShell(cheekL, this.headGroup, furColor);
 
-        // Нос
-        const noseGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        const noseMat = new THREE.MeshToonMaterial({ color: '#F472B6' });
-        const noseMesh = new THREE.Mesh(noseGeo, noseMat);
-        noseMesh.position.set(0, -0.02, 0.62);
-        headGroup.add(noseMesh);
+        const cheekR = new THREE.Mesh(cheekGeo, cheekMat);
+        cheekR.position.set(0.8, -0.3, 0.1);
+        this.headGroup.add(cheekR);
+        addFurShell(cheekR, this.headGroup, furColor);
+
+        // Розовые пятна на щеках
+        const blushGeo = new THREE.CircleGeometry(0.2, 16);
+        const blushMat = new THREE.MeshToonMaterial({ color: cheekBlushColor, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+        const blushL = new THREE.Mesh(blushGeo, blushMat);
+        blushL.position.set(-0.85, -0.3, 0.75);
+        this.headGroup.add(blushL);
+
+        const blushR = new THREE.Mesh(blushGeo, blushMat);
+        blushR.position.set(0.85, -0.3, 0.75);
+        this.headGroup.add(blushR);
+
+        // ── УШИ ──
+        const earOuterGeo = new THREE.ConeGeometry(0.4, 0.9, 1.2, 16);
+        const earOuterMat = new THREE.MeshToonMaterial({ color: furColor });
+        this.earLeft = new THREE.Mesh(earOuterGeo, earOuterMat);
+        this.earLeft.position.set(-0.65, 0.85, 0);
+        this.earLeft.rotation.z = 0.3;
+        this.earLeft.castShadow = true;
+        this.headGroup.add(this.earLeft);
+        addOutline(this.earLeft, this.headGroup, 1.04);
+
+        this.earRight = new THREE.Mesh(earOuterGeo, earOuterMat);
+        this.earRight.position.set(0.65, 0.85, 0);
+        this.earRight.rotation.z = -0.3;
+        this.earRight.castShadow = true;
+        this.headGroup.add(this.earRight);
+        addOutline(this.earRight, this.headGroup, 1.04);
+
+        // Внутренняя часть ушей
+        const earInnerGeo = new THREE.ConeGeometry(0.2, 0.55, 1.0, 16);
+        const earInnerMat = new THREE.MeshToonMaterial({ color: earInnerColor });
+        this.earInnerL = new THREE.Mesh(earInnerGeo, earInnerMat);
+        this.earInnerL.position.copy(this.earLeft.position);
+        this.earInnerL.rotation.z = this.earLeft.rotation.z;
+        this.headGroup.add(this.earInnerL);
+
+        this.earInnerR = new THREE.Mesh(earInnerGeo, earInnerMat);
+        this.earInnerR.position.copy(this.earRight.position);
+        this.earInnerR.rotation.z = this.earRight.rotation.z;
+        this.headGroup.add(this.earInnerR);
+
+        // ── ГЛАЗА ──
+        const eyeWhiteGeo = new THREE.SphereGeometry(0.35, 32, 32);
+        const eyeWhiteMat = new THREE.MeshToonMaterial({ color: eyeWhiteColor });
+        this.eyeL = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+        this.eyeL.position.set(-0.4, 0.15, 0.95);
+        this.headGroup.add(this.eyeL);
+        addOutline(this.eyeL, this.headGroup, 1.02);
+
+        this.eyeR = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+        this.eyeR.position.set(0.4, 0.15, 0.95);
+        this.headGroup.add(this.eyeR);
+        addOutline(this.eyeR, this.headGroup, 1.02);
+
+        // Радужки
+        const irisGeo = new THREE.SphereGeometry(0.22, 24, 24);
+        const irisMat = new THREE.MeshToonMaterial({ color: irisColor });
+        const irisL = new THREE.Mesh(irisGeo, irisMat);
+        irisL.position.set(-0.4, 0.12, 1.25);
+        this.headGroup.add(irisL);
+        this.irisL = irisL;
+
+        const irisR = new THREE.Mesh(irisGeo, irisMat);
+        irisR.position.set(0.4, 0.12, 1.25);
+        this.headGroup.add(irisR);
+        this.irisR = irisR;
+
+        // Зрачки
+        const pupilGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const pupilMat = new THREE.MeshToonMaterial({ color: pupilColor });
+        const pupilL = new THREE.Mesh(pupilGeo, pupilMat);
+        pupilL.position.set(-0.4, 0.1, 1.35);
+        this.headGroup.add(pupilL);
+        this.pupilL = pupilL;
+
+        const pupilR = new THREE.Mesh(pupilGeo, pupilMat);
+        pupilR.position.set(0.4, 0.1, 1.35);
+        this.headGroup.add(pupilR);
+        this.pupilR = pupilR;
+
+        // Блики
+        const shineGeo = new THREE.SphereGeometry(0.05, 8, 8);
+        const shineMat = new THREE.MeshBasicMaterial({ color: '#FFFFFF' });
+        const shineL = new THREE.Mesh(shineGeo, shineMat);
+        shineL.position.set(-0.32, 0.22, 1.4);
+        this.headGroup.add(shineL);
+        this.shineL = shineL;
+
+        const shineR = new THREE.Mesh(shineGeo, shineMat);
+        shineR.position.set(0.32, 0.22, 1.4);
+        this.headGroup.add(shineR);
+        this.shineR = shineR;
+
+        // Веки (чёрные полусферы для моргания)
+        const eyelidGeo = new THREE.SphereGeometry(0.36, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const eyelidMat = new THREE.MeshToonMaterial({ color: furColor, side: THREE.DoubleSide });
+        this.eyelidL = new THREE.Mesh(eyelidGeo, eyelidMat);
+        this.eyelidL.position.set(-0.4, 0.15, 0.95);
+        this.eyelidL.rotation.z = Math.PI;
+        this.eyelidL.scale.set(1, 0.01, 1);
+        this.eyelidL.visible = true;
+        this.headGroup.add(this.eyelidL);
+
+        this.eyelidR = new THREE.Mesh(eyelidGeo.clone(), eyelidMat.clone());
+        this.eyelidR.position.set(0.4, 0.15, 0.95);
+        this.eyelidR.rotation.z = Math.PI;
+        this.eyelidR.scale.set(1, 0.01, 1);
+        this.eyelidR.visible = true;
+        this.headGroup.add(this.eyelidR);
+
+        // ── НОС ──
+        const noseGeo = new THREE.ConeGeometry(0.12, 0.15, 16);
+        const noseMat = new THREE.MeshToonMaterial({ color: noseColor });
+        const nose = new THREE.Mesh(noseGeo, noseMat);
+        nose.position.set(0, -0.2, 1.15);
+        nose.rotation.x = Math.PI;
+        this.headGroup.add(nose);
+        this.nose = nose;
 
         // Блик на носу
-        const noseShineGeo = new THREE.SphereGeometry(0.03, 6, 6);
-        const noseShineMat = new THREE.MeshToonMaterial({ color: '#FFFFFF' });
-        const noseShine = new THREE.Mesh(noseShineGeo, noseShineMat);
-        noseShine.position.set(0.01, 0.02, 0.69);
-        headGroup.add(noseShine);
+        const noseShineGeo = new THREE.SphereGeometry(0.04, 8, 8);
+        const noseShine = new THREE.Mesh(noseShineGeo, shineMat);
+        noseShine.position.set(0, -0.17, 1.25);
+        this.headGroup.add(noseShine);
 
-        // Рот (w-улыбка) — два маленьких изогнутых цилиндра
-        const mouthColor = '#BE185D';
+        // ── РОТ (w-улыбка) ──
+        this.mouthGroup = new THREE.Group();
+        const mouthGeo = new THREE.TorusGeometry(0.08, 0.03, 8, 8, Math.PI);
         const mouthMat = new THREE.MeshToonMaterial({ color: mouthColor });
+        const mouthLeft = new THREE.Mesh(mouthGeo, mouthMat);
+        mouthLeft.position.set(-0.1, -0.35, 1.1);
+        mouthLeft.rotation.z = 0.2;
+        this.mouthGroup.add(mouthLeft);
+        this.mouthParts.push(mouthLeft);
 
-        // Левая часть рта
-        const mouthGeo1 = new THREE.TorusGeometry(0.08, 0.02, 8, 8, Math.PI);
-        const mouth1 = new THREE.Mesh(mouthGeo1, mouthMat);
-        mouth1.position.set(-0.08, -0.14, 0.62);
-        mouth1.rotation.set(0, 0, -Math.PI / 6);
-        headGroup.add(mouth1);
+        const mouthRight = new THREE.Mesh(mouthGeo, mouthMat);
+        mouthRight.position.set(0.1, -0.35, 1.1);
+        mouthRight.rotation.z = -0.2;
+        this.mouthGroup.add(mouthRight);
+        this.mouthParts.push(mouthRight);
 
-        // Правая часть
-        const mouthGeo2 = new THREE.TorusGeometry(0.08, 0.02, 8, 8, Math.PI);
-        const mouth2 = new THREE.Mesh(mouthGeo2, mouthMat);
-        mouth2.position.set(0.08, -0.14, 0.62);
-        mouth2.rotation.set(0, 0, Math.PI / 6);
-        headGroup.add(mouth2);
+        this.headGroup.add(this.mouthGroup);
 
-        // Центр
-        const mouthGeo3 = new THREE.TorusGeometry(0.05, 0.02, 8, 8, Math.PI);
-        const mouth3 = new THREE.Mesh(mouthGeo3, mouthMat);
-        mouth3.position.set(0, -0.2, 0.62);
-        mouth3.rotation.set(0, 0, Math.PI);
-        headGroup.add(mouth3);
+        // Язык (изначально скрыт)
+        const tongueGeo = new THREE.ConeGeometry(0.06, 0.2, 12);
+        const tongueMat = new THREE.MeshToonMaterial({ color: '#F472B6', transparent: true, opacity: 0 });
+        this.tongue = new THREE.Mesh(tongueGeo, tongueMat);
+        this.tongue.position.set(0, -0.4, 1.05);
+        this.headGroup.add(this.tongue);
+        this.emotionGroup.add(this.tongue);
 
-        // Усы — 4 тонких цилиндра с каждой стороны
-        const whiskerMat = new THREE.MeshToonMaterial({ color: '#CBD5E1' });
-        const whiskerGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.5, 6);
-        const whiskerPositions = [
-            { x: 0.25, y: 0.05, z: 0.5, ry: 0, rz: 0.5 },
-            { x: 0.28, y: 0.0, z: 0.5, ry: 0, rz: 0.3 },
-            { x: 0.3, y: -0.05, z: 0.5, ry: 0, rz: 0.1 },
-            { x: 0.28, y: -0.1, z: 0.5, ry: 0, rz: -0.1 },
-            { x: -0.25, y: 0.05, z: 0.5, ry: 0, rz: -0.5 },
-            { x: -0.28, y: 0.0, z: 0.5, ry: 0, rz: -0.3 },
-            { x: -0.3, y: -0.05, z: 0.5, ry: 0, rz: -0.1 },
-            { x: -0.28, y: -0.1, z: 0.5, ry: 0, rz: 0.1 }
-        ];
-        whiskerPositions.forEach(wp => {
+        // ── УСЫ ──
+        const whiskerGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.6, 6);
+        const whiskerMat = new THREE.MeshToonMaterial({ color: whiskerColor });
+        const whiskerGroup = new THREE.Group();
+        const leftY = [0.05, 0.0, -0.05, -0.1];
+        leftY.forEach(y => {
             const w = new THREE.Mesh(whiskerGeo, whiskerMat);
-            w.position.set(wp.x, wp.y, wp.z);
-            w.rotation.z = wp.rz;
-            headGroup.add(w);
+            w.position.set(-0.55, y, 0.15);
+            w.rotation.z = 0.3;
+            w.rotation.y = 0.3;
+            whiskerGroup.add(w);
         });
+        leftY.forEach(y => {
+            const w = new THREE.Mesh(whiskerGeo, whiskerMat);
+            w.position.set(0.55, y, 0.15);
+            w.rotation.z = -0.3;
+            w.rotation.y = -0.3;
+            whiskerGroup.add(w);
+        });
+        this.headGroup.add(whiskerGroup);
 
-        // ─── ГЛАЗА ───
-        this.eyeGroup = new THREE.Group();
-        this.eyeLeft = this.buildEye();
-        this.eyeLeft.position.set(-0.22, 0.12, 0.55);
-        this.eyeRight = this.buildEye();
-        this.eyeRight.position.set(0.22, 0.12, 0.55);
-        this.eyeGroup.add(this.eyeLeft);
-        this.eyeGroup.add(this.eyeRight);
-        headGroup.add(this.eyeGroup);
+        // ── ТЕЛО ──
+        const bodyGeo = new THREE.SphereGeometry(0.8, 32, 32);
+        const bodyMat = new THREE.MeshToonMaterial({ color: furColor, map: this.furTexture });
+        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        bodyMesh.scale.set(1, 1.3, 1);
+        bodyMesh.position.set(0, -1.3, 0);
+        bodyMesh.castShadow = true;
+        this.bodyGroup.add(bodyMesh);
+        this.bodyMesh = bodyMesh;
+        addOutline(bodyMesh, this.bodyGroup, 1.035);
+        this.bodyShells = addFurShell(bodyMesh, this.bodyGroup, furColor);
 
-        this.headGroup = headGroup;
-        this.catGroup.add(headGroup);
+        // Животик
+        const bellyGeo = new THREE.SphereGeometry(0.65, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const bellyMat = new THREE.MeshToonMaterial({ color: bellyColor });
+        const bellyMesh = new THREE.Mesh(bellyGeo, bellyMat);
+        bellyMesh.position.set(0, -1.2, 0.5);
+        this.bodyGroup.add(bellyMesh);
+        this.bellyMesh = bellyMesh;
 
-        // ─── УШИ ───
-        this.earsGroup = new THREE.Group();
-        this.earLeft = this.buildEar(furColor);
-        this.earLeft.position.set(-0.38, 0.55, -0.05);
-        this.earLeft.rotation.z = 0.3;
-        this.earRight = this.buildEar(furColor);
-        this.earRight.position.set(0.38, 0.55, -0.05);
-        this.earRight.rotation.z = -0.3;
-        this.earsGroup.add(this.earLeft);
-        this.earsGroup.add(this.earRight);
-        this.catGroup.add(this.earsGroup);
-
-        // ─── ЛАПЫ (передние, округлые) ───
-        this.pawsGroup = new THREE.Group();
+        // ── ЛАПЫ ──
+        const pawGeo = new THREE.CapsuleGeometry(0.15, 0.5, 8, 8);
         const pawMat = new THREE.MeshToonMaterial({ color: furColor });
 
-        [-1, 1].forEach(side => {
-            // Ножка (цилиндр, сужающийся книзу)
-            const legGeo = new THREE.CylinderGeometry(0.2, 0.18, 0.55, 12);
-            const leg = new THREE.Mesh(legGeo, pawMat);
-            leg.position.set(side * 0.35, -1.3, 0.25);
-            leg.castShadow = true;
-            this.pawsGroup.add(leg);
+        // Передние
+        this.pawFL = new THREE.Mesh(pawGeo, pawMat);
+        this.pawFL.position.set(-0.4, -1.7, 0.4);
+        this.pawFL.castShadow = true;
+        this.bodyGroup.add(this.pawFL);
 
-            // Сама лапка (сплюснутая сфера)
-            const footGeo = new THREE.SphereGeometry(0.18, 12, 8);
-            footGeo.scale(1, 0.45, 1.2);
-            const foot = new THREE.Mesh(footGeo, pawMat);
-            foot.position.set(side * 0.35, -1.65, 0.35);
-            foot.castShadow = true;
-            this.pawsGroup.add(foot);
+        this.pawFR = new THREE.Mesh(pawGeo, pawMat);
+        this.pawFR.position.set(0.4, -1.7, 0.4);
+        this.pawFR.castShadow = true;
+        this.bodyGroup.add(this.pawFR);
 
-            // Три подушечки-пальчика
-            const toeGeo = new THREE.SphereGeometry(0.05, 8, 8);
-            toeGeo.scale(1, 0.4, 1);
-            const toeMat = new THREE.MeshToonMaterial({ color: '#FECACA' });
-            [[-0.08, -0.02], [0, 0.04], [0.08, -0.02]].forEach(([dx, dz]) => {
-                const toe = new THREE.Mesh(toeGeo, toeMat);
-                toe.position.set(side * 0.35 + dx * side, -1.72, 0.4 + dz);
-                toe.rotation.x = -Math.PI / 2;
-                this.pawsGroup.add(toe);
-            });
+        // Задние
+        const pawBL = new THREE.Mesh(pawGeo, pawMat);
+        pawBL.position.set(-0.35, -1.85, -0.2);
+        pawBL.castShadow = true;
+        this.bodyGroup.add(pawBL);
 
-            // Большая центральная подушечка
-            const bigPadGeo = new THREE.SphereGeometry(0.07, 8, 8);
-            bigPadGeo.scale(1, 0.4, 1.2);
-            const bigPad = new THREE.Mesh(bigPadGeo, toeMat);
-            bigPad.position.set(side * 0.35, -1.72, 0.25);
-            bigPad.rotation.x = -Math.PI / 2;
-            this.pawsGroup.add(bigPad);
+        const pawBR = new THREE.Mesh(pawGeo, pawMat);
+        pawBR.position.set(0.35, -1.85, -0.2);
+        pawBR.castShadow = true;
+        this.bodyGroup.add(pawBR);
+
+        // Подушечки на передних лапах
+        const padGeo = new THREE.SphereGeometry(0.05, 8, 8);
+        const padMat = new THREE.MeshToonMaterial({ color: pawPadColor });
+
+        [-0.4, 0.4].forEach(x => {
+            // Основная подушечка
+            const mainPad = new THREE.Mesh(padGeo.clone(), padMat);
+            mainPad.position.set(x, -2.05, 0.55);
+            mainPad.scale.set(1.5, 1, 1);
+            this.bodyGroup.add(mainPad);
+            // Три маленьких
+            for (let i = 0; i < 3; i++) {
+                const smallPad = new THREE.Mesh(padGeo, padMat);
+                smallPad.position.set(x + (i - 1) * 0.06, -1.9, 0.55);
+                smallPad.scale.set(0.7, 0.7, 0.7);
+                this.bodyGroup.add(smallPad);
+            }
         });
 
-        this.catGroup.add(this.pawsGroup);
-
-        // ─── ХВОСТ ───
+        // ── ХВОСТ ──
         this.tailGroup = new THREE.Group();
-        const tailCurve = new THREE.CubicBezierCurve3(
-            new THREE.Vector3(0, -1.2, -0.5),
-            new THREE.Vector3(0.3, -0.5, -0.8),
-            new THREE.Vector3(-0.1, 0.3, -0.6),
-            new THREE.Vector3(0.1, 0.8, -0.5)
-        );
-        const tailGeo = new THREE.TubeGeometry(tailCurve, 16, 0.08, 8, false);
-        // Переменный радиус
-        const tailPositions = tailGeo.attributes.position;
-        for (let i = 0; i < tailPositions.count; i++) {
-            const t = i / tailPositions.count;
-            const scale = 1.0 - t * 0.5;
-            tailPositions.setX(i, tailPositions.getX(i) * (1 + t * 0.2));
-        }
-        tailGeo.computeVertexNormals();
-
+        const tailCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0.4, -1.5, 0),
+            new THREE.Vector3(0.8, -1.0, 0.3),
+            new THREE.Vector3(1.0, -0.5, 0),
+            new THREE.Vector3(0.8, 0.0, -0.3),
+            new THREE.Vector3(0.6, 0.3, 0)
+        ]);
+        const tailGeoTub = new THREE.TubeGeometry(tailCurve, 20, 0.15, 8, false);
         const tailMat = new THREE.MeshToonMaterial({ color: furColor });
-        const tailMesh = new THREE.Mesh(tailGeo, tailMat);
+        const tailMesh = new THREE.Mesh(tailGeoTub, tailMat);
         tailMesh.castShadow = true;
         this.tailGroup.add(tailMesh);
+        this.tailMesh = tailMesh;
 
-        // Тёмный кончик
-        const tipGeo = new THREE.SphereGeometry(0.07, 8, 8);
-        const tipMat = new THREE.MeshToonMaterial({ color: '#B45309' });
-        const tipMesh = new THREE.Mesh(tipGeo, tipMat);
-        const tipPoint = tailCurve.getPoint(1);
-        tipMesh.position.copy(tipPoint);
-        this.tailGroup.add(tipMesh);
+        // Кончик хвоста (тёмный)
+        const tailTipGeo = new THREE.SphereGeometry(0.05, 8, 8);
+        const tailTipMat = new THREE.MeshToonMaterial({ color: '#B45309' });
+        const tailTip = new THREE.Mesh(tailTipGeo, tailTipMat);
+        const tipPos = tailCurve.getPoint(1);
+        tailTip.position.copy(tipPos);
+        this.tailGroup.add(tailTip);
 
-        this.catGroup.add(this.tailGroup);
+        this.bodyGroup.add(this.tailGroup);
+
+        // ── СБОРКА ──
+        this.catGroup.add(this.headGroup);
+        this.catGroup.add(this.bodyGroup);
+        this.catGroup.add(this.hatGroup);
+        this.catGroup.add(this.glassesGroup);
+        this.catGroup.add(this.accessoryGroup);
+        this.catGroup.add(this.emotionGroup);
 
         this.scene.add(this.catGroup);
-
-        // Группы для аксессуаров
-        this.hatGroup = new THREE.Group();
-        this.glassesGroup = new THREE.Group();
-        this.accessoryGroup = new THREE.Group();
-        this.headGroup.add(this.hatGroup);
-        this.headGroup.add(this.glassesGroup);
-        this.catGroup.add(this.accessoryGroup);
-
-        // ─── ТЕНЬ (plane) ───
-        const shadowGeo = new THREE.PlaneGeometry(1.8, 1.2);
-        const shadowMat = new THREE.MeshBasicMaterial({
-            color: 0x000000,
-            transparent: true,
-            opacity: 0.15,
-            side: THREE.DoubleSide
-        });
-        const shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
-        shadowPlane.rotation.x = -Math.PI / 2;
-        shadowPlane.position.y = -2.1;
-        shadowPlane.receiveShadow = true;
-        this.scene.add(shadowPlane);
     }
 
-    buildEye() {
-        const group = new THREE.Group();
-
-        // Белок
-        const whiteGeo = new THREE.SphereGeometry(0.13, 12, 12);
-        const whiteMat = new THREE.MeshToonMaterial({ color: '#FFFFFF' });
-        const white = new THREE.Mesh(whiteGeo, whiteMat);
-        group.add(white);
-
-        // Радужка
-        const irisGeo = new THREE.SphereGeometry(0.08, 10, 10);
-        const irisMat = new THREE.MeshToonMaterial({ color: '#10B981' });
-        const iris = new THREE.Mesh(irisGeo, irisMat);
-        iris.position.z = 0.08;
-        group.add(iris);
-
-        // Зрачок
-        const pupilGeo = new THREE.SphereGeometry(0.04, 8, 8);
-        const pupilMat = new THREE.MeshToonMaterial({ color: '#000000' });
-        const pupil = new THREE.Mesh(pupilGeo, pupilMat);
-        pupil.position.z = 0.12;
-        group.add(pupil);
-
-        // Блик
-        const shineGeo = new THREE.SphereGeometry(0.025, 6, 6);
-        const shineMat = new THREE.MeshToonMaterial({ color: '#FFFFFF' });
-        const shine = new THREE.Mesh(shineGeo, shineMat);
-        shine.position.set(0.03, 0.03, 0.15);
-        group.add(shine);
-
-        return group;
-    }
-
-    buildEar(furColor) {
-        const group = new THREE.Group();
-
-        // Внешнее ухо
-        const outerGeo = new THREE.ConeGeometry(0.22, 0.5, 8, 1);
-        const outerMat = new THREE.MeshToonMaterial({ color: furColor });
-        const outer = new THREE.Mesh(outerGeo, outerMat);
-        outer.castShadow = true;
-        group.add(outer);
-
-        // Внутреннее ухо
-        const innerGeo = new THREE.ConeGeometry(0.13, 0.35, 8, 1);
-        const innerMat = new THREE.MeshToonMaterial({ color: '#FECACA' });
-        const inner = new THREE.Mesh(innerGeo, innerMat);
-        inner.position.y = -0.03;
-        inner.position.z = 0.05;
-        group.add(inner);
-
-        return group;
-    }
-
-    // ─── Аксессуары ───────────────────────────────────────────────
+    // ─── ШЛЯПЫ ──────────────────────────────────────────────
 
     clearGroup(group) {
         while (group.children.length > 0) {
@@ -5750,156 +5893,136 @@ class Cat3D {
         this.clearGroup(this.hatGroup);
         if (type === 'none') return;
 
-        if (type === 'cap') {
-            // Кепка
-            const brimGeo = new THREE.CylinderGeometry(0.4, 0.45, 0.1, 16);
-            const brimMat = new THREE.MeshToonMaterial({ color: '#1E40AF' });
-            const brim = new THREE.Mesh(brimGeo, brimMat);
-            brim.position.y = 0.65;
-            this.hatGroup.add(brim);
-
-            const topGeo = new THREE.SphereGeometry(0.35, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
-            const topMat = new THREE.MeshToonMaterial({ color: '#2563EB' });
-            const top = new THREE.Mesh(topGeo, topMat);
-            top.position.y = 0.7;
-            this.hatGroup.add(top);
-
-            const buttonGeo = new THREE.SphereGeometry(0.06, 8, 8);
-            const buttonMat = new THREE.MeshToonMaterial({ color: '#1E3A8A' });
-            const button = new THREE.Mesh(buttonGeo, buttonMat);
-            button.position.y = 0.95;
-            this.hatGroup.add(button);
-        } else if (type === 'grad') {
-            // Выпускная шапочка
-            const baseGeo = new THREE.BoxGeometry(0.45, 0.06, 0.45);
-            const baseMat = new THREE.MeshToonMaterial({ color: '#111827' });
-            const base = new THREE.Mesh(baseGeo, baseMat);
-            base.position.y = 0.72;
-            this.hatGroup.add(base);
-
-            const topGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.2, 12);
-            const topMat = new THREE.MeshToonMaterial({ color: '#111827' });
-            const top = new THREE.Mesh(topGeo, topMat);
-            top.position.y = 0.85;
-            this.hatGroup.add(top);
-
-            // Кисточка
-            const tasselGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6);
-            const tasselMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
-            const tassel = new THREE.Mesh(tasselGeo, tasselMat);
-            tassel.position.set(0.1, 0.7, 0);
-            tassel.rotation.z = 0.5;
-            this.hatGroup.add(tassel);
-        } else if (type === 'crown') {
+        if (type === 'crown') {
             // Корона
-            const baseGeo = new THREE.TorusGeometry(0.3, 0.05, 8, 24);
-            const baseMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
-            const base = new THREE.Mesh(baseGeo, baseMat);
-            base.position.y = 0.68;
+            const crownMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
+            const baseGeo = new THREE.CylinderGeometry(0.35, 0.4, 0.15, 8);
+            const base = new THREE.Mesh(baseGeo, crownMat);
+            base.position.y = 1.15;
             this.hatGroup.add(base);
-
             for (let i = 0; i < 5; i++) {
-                const angle = (i / 5) * Math.PI * 2;
-                const spikeGeo = new THREE.ConeGeometry(0.05, 0.2, 6);
-                const spike = new THREE.Mesh(spikeGeo, baseMat);
-                spike.position.set(
-                    Math.cos(angle) * 0.3,
-                    0.78,
-                    Math.sin(angle) * 0.3
-                );
+                const angle = (i / 5) * Math.PI * 2 + 0.2;
+                const spikeGeo = new THREE.ConeGeometry(0.06, 0.25, 6);
+                const spike = new THREE.Mesh(spikeGeo, crownMat);
+                spike.position.set(Math.cos(angle) * 0.35, 1.3, Math.sin(angle) * 0.35);
                 this.hatGroup.add(spike);
             }
-
-            const jewelGeo = new THREE.SphereGeometry(0.05, 8, 8);
-            const jewelMat = new THREE.MeshToonMaterial({ color: '#EF4444' });
-            const jewel = new THREE.Mesh(jewelGeo, jewelMat);
-            jewel.position.y = 0.88;
-            this.hatGroup.add(jewel);
-        } else if (type === 'wizard') {
-            // Колпак волшебника
-            const coneGeo = new THREE.ConeGeometry(0.28, 0.7, 12, 1);
-            const coneMat = new THREE.MeshToonMaterial({ color: '#7C3AED' });
-            const cone = new THREE.Mesh(coneGeo, coneMat);
-            cone.position.y = 0.85;
-            this.hatGroup.add(cone);
-
-            const brimGeo = new THREE.TorusGeometry(0.32, 0.06, 8, 24);
-            const brimMat = new THREE.MeshToonMaterial({ color: '#5B21B6' });
-            const brim = new THREE.Mesh(brimGeo, brimMat);
-            brim.position.y = 0.58;
-            this.hatGroup.add(brim);
-
-            // Звёздочка
+            // Драгоценные камни
+            const gemColors = ['#EF4444', '#3B82F6', '#10B981', '#FBBF24', '#8B5CF6'];
             for (let i = 0; i < 5; i++) {
-                const starGeo = new THREE.SphereGeometry(0.02, 4, 4);
-                const starMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
+                const angle = (i / 5) * Math.PI * 2 + 0.2;
+                const gemGeo = new THREE.SphereGeometry(0.05, 6, 6);
+                const gemMat = new THREE.MeshToonMaterial({ color: gemColors[i] });
+                const gem = new THREE.Mesh(gemGeo, gemMat);
+                gem.position.set(Math.cos(angle) * 0.38, 1.05, Math.sin(angle) * 0.38);
+                this.hatGroup.add(gem);
+            }
+        } else if (type === 'cap') {
+            const capMat = new THREE.MeshToonMaterial({ color: '#3B82F6' });
+            const topGeo = new THREE.SphereGeometry(0.32, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const top = new THREE.Mesh(topGeo, capMat);
+            top.position.y = 1.1;
+            this.hatGroup.add(top);
+            const visorGeo = new THREE.SphereGeometry(0.35, 16, 4, 0, Math.PI, Math.PI / 2, Math.PI / 4);
+            const visorMat = new THREE.MeshToonMaterial({ color: '#1E3A5F' });
+            const visor = new THREE.Mesh(visorGeo, visorMat);
+            visor.position.set(0, 1.0, 0.2);
+            this.hatGroup.add(visor);
+        } else if (type === 'tophat') {
+            const topMat = new THREE.MeshToonMaterial({ color: '#1F2937' });
+            const brimGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.06, 16);
+            const brim = new THREE.Mesh(brimGeo, topMat);
+            brim.position.y = 1.1;
+            this.hatGroup.add(brim);
+            const topGeo = new THREE.CylinderGeometry(0.25, 0.28, 0.5, 16);
+            const topPart = new THREE.Mesh(topGeo, topMat);
+            topPart.position.y = 1.4;
+            this.hatGroup.add(topPart);
+            const bandGeo = new THREE.CylinderGeometry(0.29, 0.29, 0.08, 16);
+            const bandMat = new THREE.MeshToonMaterial({ color: '#EF4444' });
+            const band = new THREE.Mesh(bandGeo, bandMat);
+            band.position.y = 1.2;
+            this.hatGroup.add(band);
+        } else if (type === 'wizard') {
+            const wizMat = new THREE.MeshToonMaterial({ color: '#7C3AED' });
+            const coneGeo = new THREE.ConeGeometry(0.28, 0.7, 16);
+            const cone = new THREE.Mesh(coneGeo, wizMat);
+            cone.position.y = 1.5;
+            cone.rotation.z = -0.2;
+            this.hatGroup.add(cone);
+            const brimGeo = new THREE.TorusGeometry(0.3, 0.06, 8, 16);
+            const brim = new THREE.Mesh(brimGeo, wizMat);
+            brim.position.y = 1.15;
+            brim.rotation.x = Math.PI / 2;
+            this.hatGroup.add(brim);
+            // Звёзды
+            const starGeo = new THREE.SphereGeometry(0.06, 6, 6);
+            const starMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
+            for (let i = 0; i < 3; i++) {
                 const star = new THREE.Mesh(starGeo, starMat);
-                star.position.set(
-                    (Math.random() - 0.5) * 0.4,
-                    0.7 + Math.random() * 0.5,
-                    (Math.random() - 0.5) * 0.4
-                );
+                star.position.set((Math.random() - 0.5) * 0.3, 1.2 + Math.random() * 0.5, (Math.random() - 0.5) * 0.3);
                 this.hatGroup.add(star);
             }
-        } else if (type === 'tophat') {
-            // Цилиндр
-            const topGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.45, 16);
-            const topMat = new THREE.MeshToonMaterial({ color: '#111827' });
-            const top = new THREE.Mesh(topGeo, topMat);
-            top.position.y = 0.85;
-            this.hatGroup.add(top);
-
-            const brimGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.06, 24);
-            const brimMat = new THREE.MeshToonMaterial({ color: '#1F2937' });
-            const brim = new THREE.Mesh(brimGeo, brimMat);
-            brim.position.y = 0.6;
-            this.hatGroup.add(brim);
-
-            const bandGeo = new THREE.TorusGeometry(0.26, 0.03, 8, 24);
-            const bandMat = new THREE.MeshToonMaterial({ color: '#7C3AED' });
-            const band = new THREE.Mesh(bandGeo, bandMat);
-            band.rotation.x = Math.PI / 2;
-            band.position.y = 0.75;
-            this.hatGroup.add(band);
+        } else if (type === 'grad') {
+            const gradMat = new THREE.MeshToonMaterial({ color: '#1F2937' });
+            const baseGeo = new THREE.BoxGeometry(0.5, 0.08, 0.5);
+            const base = new THREE.Mesh(baseGeo, gradMat);
+            base.position.y = 1.15;
+            this.hatGroup.add(base);
+            const topGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.4, 4);
+            const topPart = new THREE.Mesh(topGeo, gradMat);
+            topPart.position.y = 1.4;
+            this.hatGroup.add(topPart);
+            const tasselGeo = new THREE.SphereGeometry(0.06, 6, 6);
+            const tasselMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
+            const tassel = new THREE.Mesh(tasselGeo, tasselMat);
+            tassel.position.set(0.2, 1.6, 0);
+            this.hatGroup.add(tassel);
         }
     }
+
+    // ─── ОЧКИ ────────────────────────────────────────────────
 
     setGlasses(type) {
         this.clearGroup(this.glassesGroup);
         if (type === 'none') return;
 
-        const frameGeo = new THREE.TorusGeometry(0.2, 0.03, 8, 16);
-
         if (type === 'round') {
-            const frameMat = new THREE.MeshToonMaterial({ color: '#374151' });
-            const frameL = new THREE.Mesh(frameGeo, frameMat);
-            frameL.position.set(-0.2, 0.12, 0.6);
+            const frameMat = new THREE.MeshToonMaterial({ color: '#1F2937' });
+            const torusGeo = new THREE.TorusGeometry(0.14, 0.025, 8, 16);
+            const frameL = new THREE.Mesh(torusGeo, frameMat);
+            frameL.position.set(-0.4, 0.12, 1.25);
             this.glassesGroup.add(frameL);
-            const frameR = new THREE.Mesh(frameGeo, frameMat);
-            frameR.position.set(0.2, 0.12, 0.6);
+            const frameR = new THREE.Mesh(torusGeo, frameMat);
+            frameR.position.set(0.4, 0.12, 1.25);
             this.glassesGroup.add(frameR);
-
-            const bridgeGeo = new THREE.BoxGeometry(0.1, 0.03, 0.03);
+            const bridgeGeo = new THREE.BoxGeometry(0.5, 0.03, 0.03);
             const bridge = new THREE.Mesh(bridgeGeo, frameMat);
-            bridge.position.set(0, 0.12, 0.6);
+            bridge.position.set(0, 0.12, 1.25);
             this.glassesGroup.add(bridge);
+            // Линзы
+            const lensGeo = new THREE.CircleGeometry(0.12, 16);
+            const lensMat = new THREE.MeshToonMaterial({ color: '#93C5FD', transparent: true, opacity: 0.2, side: THREE.DoubleSide });
+            const lensL = new THREE.Mesh(lensGeo, lensMat);
+            lensL.position.set(-0.4, 0.12, 1.28);
+            this.glassesGroup.add(lensL);
+            const lensR = new THREE.Mesh(lensGeo, lensMat);
+            lensR.position.set(0.4, 0.12, 1.28);
+            this.glassesGroup.add(lensR);
         } else if (type === 'cool') {
-            // Стильные (треугольные/wayfarer)
             const frameMat = new THREE.MeshToonMaterial({ color: '#111827' });
             const boxGeo = new THREE.BoxGeometry(0.35, 0.2, 0.04);
             const boxL = new THREE.Mesh(boxGeo, frameMat);
-            boxL.position.set(-0.2, 0.12, 0.6);
+            boxL.position.set(-0.4, 0.12, 1.25);
             this.glassesGroup.add(boxL);
             const boxR = new THREE.Mesh(boxGeo, frameMat);
-            boxR.position.set(0.2, 0.12, 0.6);
+            boxR.position.set(0.4, 0.12, 1.25);
             this.glassesGroup.add(boxR);
-
-            const bridgeGeo = new THREE.BoxGeometry(0.08, 0.03, 0.03);
+            const bridgeGeo = new THREE.BoxGeometry(0.5, 0.03, 0.03);
             const bridge = new THREE.Mesh(bridgeGeo, frameMat);
-            bridge.position.set(0, 0.12, 0.6);
+            bridge.position.set(0, 0.12, 1.25);
             this.glassesGroup.add(bridge);
         } else if (type === 'star') {
-            // Звёздные (шестиугольники)
             const starFrameMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
             for (let g = 0; g < 2; g++) {
                 const sign = g === 0 ? -1 : 1;
@@ -5907,65 +6030,74 @@ class Cat3D {
                     const angle = (i / 6) * Math.PI * 2;
                     const rodGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.18, 6);
                     const rod = new THREE.Mesh(rodGeo, starFrameMat);
-                    rod.position.set(sign * 0.2 + Math.cos(angle) * 0.1, 0.12 + Math.sin(angle) * 0.1, 0.6);
+                    rod.position.set(sign * 0.4 + Math.cos(angle) * 0.1, 0.12 + Math.sin(angle) * 0.1, 1.25);
                     rod.rotation.z = angle + Math.PI / 2;
                     this.glassesGroup.add(rod);
                 }
             }
-            const bridgeGeo = new THREE.BoxGeometry(0.08, 0.03, 0.03);
+            const bridgeGeo = new THREE.BoxGeometry(0.5, 0.03, 0.03);
             const bridge = new THREE.Mesh(bridgeGeo, starFrameMat);
-            bridge.position.set(0, 0.12, 0.6);
+            bridge.position.set(0, 0.12, 1.25);
             this.glassesGroup.add(bridge);
         } else if (type === 'd3') {
-            // 3D-очки (квадратные)
             const d3Mat = new THREE.MeshToonMaterial({ color: '#EF4444' });
             const boxGeo = new THREE.BoxGeometry(0.25, 0.18, 0.05);
             const boxL = new THREE.Mesh(boxGeo, d3Mat);
-            boxL.position.set(-0.2, 0.12, 0.6);
+            boxL.position.set(-0.4, 0.12, 1.25);
             this.glassesGroup.add(boxL);
             const boxR = new THREE.Mesh(boxGeo, d3Mat);
-            boxR.position.set(0.2, 0.12, 0.6);
+            boxR.position.set(0.4, 0.12, 1.25);
             this.glassesGroup.add(boxR);
-
-            // Синяя линза
             const lensGeo = new THREE.BoxGeometry(0.2, 0.13, 0.03);
             const lensMat = new THREE.MeshToonMaterial({ color: '#3B82F6', transparent: true, opacity: 0.5 });
             const lensL = new THREE.Mesh(lensGeo, lensMat);
-            lensL.position.set(-0.2, 0.12, 0.63);
+            lensL.position.set(-0.4, 0.12, 1.28);
             this.glassesGroup.add(lensL);
             const lensR = new THREE.Mesh(lensGeo, lensMat);
-            lensR.position.set(0.2, 0.12, 0.63);
+            lensR.position.set(0.4, 0.12, 1.28);
             this.glassesGroup.add(lensR);
-
-            const bridgeGeo = new THREE.BoxGeometry(0.08, 0.03, 0.03);
+            const bridgeGeo = new THREE.BoxGeometry(0.5, 0.03, 0.03);
             const bridge = new THREE.Mesh(bridgeGeo, d3Mat);
-            bridge.position.set(0, 0.12, 0.6);
+            bridge.position.set(0, 0.12, 1.25);
             this.glassesGroup.add(bridge);
         }
     }
 
+    // ─── СКИН ────────────────────────────────────────────────
+
     setSkin(hex) {
         const color = new THREE.Color(hex);
-        this.updateGroupColor(this.catGroup, color, ['#FEF3C7', '#FECACA', '#F472B6', '#BE185D', '#CBD5E1', '#B45309', '#10B981', '#FFFFFF', '#000000']);
+        const exclude = ['#FEF3C7', '#FECACA', '#F472B6', '#BE185D', '#CBD5E1', '#B45309', '#10B981', '#FFFFFF', '#000000', '#1E293B'];
+        this.updateGroupColor(this.catGroup, color, exclude);
+
+        // Обновляем цвет fur shells
+        const allShells = [...(this.headShells || []), ...(this.bodyShells || [])];
+        allShells.forEach(shell => {
+            if (shell.material && shell.material.color) {
+                shell.material.color.copy(color);
+            }
+        });
     }
 
     updateGroupColor(group, color, exclude) {
         group.traverse(child => {
             if (child.isMesh && child.material && child.material.color) {
-                const hex = '#' + child.material.color.getHexString();
-                if (!exclude.some(e => e.toUpperCase() === hex.toUpperCase())) {
+                const hexChild = '#' + child.material.color.getHexString();
+                if (!exclude.some(e => e.toUpperCase() === hexChild.toUpperCase())) {
                     child.material.color.copy(color);
                 }
             }
         });
     }
 
+    // ─── АКСЕССУАРЫ ──────────────────────────────────────────
+
     setAccessory(type) {
         this.clearGroup(this.accessoryGroup);
+        this.particles = [];
         if (type === 'none') return;
 
         if (type === 'bowtie') {
-            // Бабочка
             const bowMat = new THREE.MeshToonMaterial({ color: '#EF4444' });
             const wingGeo = new THREE.BoxGeometry(0.2, 0.1, 0.04);
             const wingL = new THREE.Mesh(wingGeo, bowMat);
@@ -5981,39 +6113,33 @@ class Cat3D {
             knot.position.set(0, -0.75, 0.72);
             this.accessoryGroup.add(knot);
         } else if (type === 'collar') {
-            // Ошейник
             const collarGeo = new THREE.TorusGeometry(0.35, 0.04, 8, 16);
             const collarMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
             const collar = new THREE.Mesh(collarGeo, collarMat);
             collar.position.y = -0.55;
             collar.rotation.x = Math.PI / 2;
             this.accessoryGroup.add(collar);
-
             const bellGeo = new THREE.SphereGeometry(0.07, 8, 8);
             const bellMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
             const bell = new THREE.Mesh(bellGeo, bellMat);
             bell.position.set(0, -0.85, 0.35);
             this.accessoryGroup.add(bell);
         } else if (type === 'fish') {
-            // Рыбка в лапах
             const fishGroup = new THREE.Group();
             const bodyGeo = new THREE.SphereGeometry(0.1, 8, 8);
             bodyGeo.scale(1, 0.6, 1.5);
             const bodyMat = new THREE.MeshToonMaterial({ color: '#3B82F6' });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             fishGroup.add(body);
-
             const tailGeo = new THREE.ConeGeometry(0.08, 0.15, 6);
             const tail = new THREE.Mesh(tailGeo, bodyMat);
             tail.position.z = -0.2;
             tail.rotation.x = Math.PI / 2;
             fishGroup.add(tail);
-
             fishGroup.position.set(0, -1.75, 0.6);
             fishGroup.rotation.z = 0.3;
             this.accessoryGroup.add(fishGroup);
         } else if (type === 'book') {
-            // Книжка
             const bookGroup = new THREE.Group();
             const coverGeo = new THREE.BoxGeometry(0.2, 0.02, 0.28);
             const coverMat = new THREE.MeshToonMaterial({ color: '#7C3AED' });
@@ -6029,7 +6155,6 @@ class Cat3D {
             bookGroup.rotation.x = -0.2;
             this.accessoryGroup.add(bookGroup);
         } else if (type === 'particles') {
-            // Звёздочки (частицы)
             for (let i = 0; i < 12; i++) {
                 const starGeo = new THREE.SphereGeometry(0.03, 4, 4);
                 const starMat = new THREE.MeshToonMaterial({ color: '#FBBF24' });
@@ -6053,12 +6178,132 @@ class Cat3D {
         }
     }
 
-    // ─── Взаимодействие ───────────────────────────────────────────
+    // ─── ЭМОЦИИ ──────────────────────────────────────────────
+
+    setEmotion(type) {
+        this._currentEmotion = type;
+        const s = (x, y) => ({ x, y });
+
+        switch (type) {
+            case 'happy':
+                // Глаза шире (scaleY)
+                if (this.eyeL) this.eyeL.scale.set(1, 1.3, 1);
+                if (this.eyeR) this.eyeR.scale.set(1, 1.3, 1);
+                if (this.irisL) this.irisL.scale.set(1, 1.3, 1);
+                if (this.irisR) this.irisR.scale.set(1, 1.3, 1);
+                if (this.pupilL) this.pupilL.scale.set(1, 1.3, 1);
+                if (this.pupilR) this.pupilR.scale.set(1, 1.3, 1);
+                // Уши слегка раздвинуты
+                if (this.earLeft) this.earLeft.rotation.z = 0.1;
+                if (this.earRight) this.earRight.rotation.z = -0.1;
+                if (this.earInnerL) this.earInnerL.rotation.z = 0.1;
+                if (this.earInnerR) this.earInnerR.rotation.z = -0.1;
+                break;
+            case 'sad':
+                if (this.eyeL) this.eyeL.scale.set(1, 1, 1);
+                if (this.eyeR) this.eyeR.scale.set(1, 1, 1);
+                if (this.irisL) this.irisL.scale.set(1, 1, 1);
+                if (this.irisR) this.irisR.scale.set(1, 1, 1);
+                if (this.pupilL) this.pupilL.scale.set(1, 1, 1);
+                if (this.pupilR) this.pupilR.scale.set(1, 1, 1);
+                if (this.earLeft) this.earLeft.rotation.z = 0.6;
+                if (this.earRight) this.earRight.rotation.z = -0.6;
+                if (this.earInnerL) this.earInnerL.rotation.z = 0.6;
+                if (this.earInnerR) this.earInnerR.rotation.z = -0.6;
+                // Перевернуть рот
+                if (this.mouthParts[0]) this.mouthParts[0].rotation.z = -0.2;
+                if (this.mouthParts[1]) this.mouthParts[1].rotation.z = 0.2;
+                break;
+            case 'surprised':
+                if (this.eyeL) this.eyeL.scale.set(1.2, 1.2, 1);
+                if (this.eyeR) this.eyeR.scale.set(1.2, 1.2, 1);
+                if (this.irisL) this.irisL.scale.set(1.2, 1.2, 1);
+                if (this.irisR) this.irisR.scale.set(1.2, 1.2, 1);
+                if (this.pupilL) this.pupilL.scale.set(1.2, 1.2, 1);
+                if (this.pupilR) this.pupilR.scale.set(1.2, 1.2, 1);
+                if (this.earLeft) this.earLeft.rotation.z = 0.1;
+                if (this.earRight) this.earRight.rotation.z = -0.1;
+                if (this.earInnerL) this.earInnerL.rotation.z = 0.1;
+                if (this.earInnerR) this.earInnerR.rotation.z = -0.1;
+                this._targetMouthOpen = 0.7;
+                break;
+            case 'sleepy':
+                // Веки полузакрыты
+                if (this.eyelidL) this.eyelidL.scale.set(1, 0.6, 1);
+                if (this.eyelidR) this.eyelidR.scale.set(1, 0.6, 1);
+                if (this.earLeft) this.earLeft.rotation.z = 0.4;
+                if (this.earRight) this.earRight.rotation.z = -0.4;
+                if (this.earInnerL) this.earInnerL.rotation.z = 0.4;
+                if (this.earInnerR) this.earInnerR.rotation.z = -0.4;
+                break;
+            case 'normal':
+            default:
+                // Сброс
+                if (this.eyeL) this.eyeL.scale.set(1, 1, 1);
+                if (this.eyeR) this.eyeR.scale.set(1, 1, 1);
+                if (this.irisL) this.irisL.scale.set(1, 1, 1);
+                if (this.irisR) this.irisR.scale.set(1, 1, 1);
+                if (this.pupilL) this.pupilL.scale.set(1, 1, 1);
+                if (this.pupilR) this.pupilR.scale.set(1, 1, 1);
+                if (this.eyelidL) this.eyelidL.scale.set(1, 0.01, 1);
+                if (this.eyelidR) this.eyelidR.scale.set(1, 0.01, 1);
+                if (this.earLeft) this.earLeft.rotation.z = 0.3;
+                if (this.earRight) this.earRight.rotation.z = -0.3;
+                if (this.earInnerL) this.earInnerL.rotation.z = 0.3;
+                if (this.earInnerR) this.earInnerR.rotation.z = -0.3;
+                if (this.mouthParts[0]) { this.mouthParts[0].rotation.z = 0.2; this.mouthParts[0].position.set(-0.1, -0.35, 1.1); }
+                if (this.mouthParts[1]) { this.mouthParts[1].rotation.z = -0.2; this.mouthParts[1].position.set(0.1, -0.35, 1.1); }
+                this._targetMouthOpen = 0;
+                if (this.tongue && this.tongue.material) this.tongue.material.opacity = 0;
+                break;
+        }
+    }
+
+    // ─── Анимации ────────────────────────────────────────────
+
+    speak() {
+        this._isSpeaking = true;
+        this._speakTimer = 0;
+    }
+
+    eat() {
+        this._eatingProgress = 0;
+    }
+
+    pet() {
+        this._jumpOffset = 0.2;
+        setTimeout(() => { this._jumpOffset = 0; }, 300);
+
+        if (typeof window !== 'undefined' && window.onKittyPet) {
+            window.onKittyPet();
+        }
+    }
+
+    spin() {
+        this._spinAngle = 0;
+        const spinDuration = 800;
+        const startTime = performance.now();
+        const doSpin = (now) => {
+            if (this.isDisposed) return;
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / spinDuration, 1);
+            // Ease out
+            const eased = 1 - Math.pow(1 - progress, 3);
+            this._spinAngle = eased * Math.PI * 2;
+            if (progress < 1) {
+                requestAnimationFrame(doSpin);
+            } else {
+                this._spinAngle = 0;
+            }
+        };
+        requestAnimationFrame(doSpin);
+    }
+
+    // ─── Взаимодействие ──────────────────────────────────────
 
     setupInteraction() {
         const canvas = this.renderer.domElement;
 
-        // Мышь
         canvas.addEventListener('mousemove', (e) => {
             if (!this._isDragging) {
                 const rect = canvas.getBoundingClientRect();
@@ -6112,61 +6357,7 @@ class Cat3D {
         });
     }
 
-    pet() {
-        this._jumpOffset = 0.15;
-        setTimeout(() => { this._jumpOffset = 0; }, 300);
-
-        if (typeof window !== 'undefined' && window.onKittyPet) {
-            window.onKittyPet();
-        }
-    }
-
-    spin() {
-        this._spinAngle = 0;
-        const spinDuration = 800;
-        const startTime = performance.now();
-        const doSpin = (now) => {
-            const elapsed = now - startTime;
-            const progress = Math.min(elapsed / spinDuration, 1);
-            this._spinAngle = progress * Math.PI * 2;
-            if (progress < 1) {
-                requestAnimationFrame(doSpin);
-            } else {
-                this._spinAngle = 0;
-            }
-        };
-        requestAnimationFrame(doSpin);
-    }
-
-    sparkle() {
-        // Искры вокруг кота
-        const sparkCount = 20;
-        for (let i = 0; i < sparkCount; i++) {
-            const sparkGeo = new THREE.SphereGeometry(0.03, 4, 4);
-            const colors = ['#FBBF24', '#F59E0B', '#EF4444', '#3B82F6', '#10B981', '#8B5CF6'];
-            const sparkMat = new THREE.MeshToonMaterial({ color: colors[Math.floor(Math.random() * colors.length)] });
-            const spark = new THREE.Mesh(sparkGeo, sparkMat);
-            spark.position.set(
-                (Math.random() - 0.5) * 2,
-                -0.5 + Math.random() * 2,
-                (Math.random() - 0.5) * 2
-            );
-            spark.userData = {
-                velocity: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.05,
-                    0.02 + Math.random() * 0.05,
-                    (Math.random() - 0.5) * 0.05
-                ),
-                life: 1.0,
-                decay: 0.01 + Math.random() * 0.02
-            };
-            this.scene.add(spark);
-            this._tempSparks = this._tempSparks || [];
-            this._tempSparks.push(spark);
-        }
-    }
-
-    // ─── Игровой цикл ─────────────────────────────────────────────
+    // ─── ГЛАВНЫЙ ЦИКЛ ────────────────────────────────────────
 
     startLoop() {
         const animate = () => {
@@ -6176,111 +6367,184 @@ class Cat3D {
             const dt = Math.min(this.clock.getDelta(), 0.1);
             this.animTime += dt;
 
-            // Вращение (плавное)
-            this._currentRotX += (this._targetRotX - this._currentRotX) * 0.1;
-            this._currentRotY += (this._targetRotY - this._currentRotY) * 0.1;
-            this.catGroup.rotation.x = this._currentRotX * Math.PI / 6;
-            this.catGroup.rotation.y = this._currentRotY * Math.PI / 4 + this._spinAngle;
-
-            // Дыхание
-            const breath = 1 + Math.sin(this.animTime * 2.1) * 0.02;
-            this.catGroup.scale.setScalar(breath);
-
-            // Прыжок
-            this.catGroup.position.y = this._jumpOffset * Math.sin(Math.min(this._jumpOffset > 0 ? this.animTime * 15 : 0, Math.PI));
-
-            // Моргание
-            this._blinkTimer += dt;
-            if (this._blinkTimer > this._blinkInterval && !this._isBlinking) {
-                this._isBlinking = true;
-                this._blinkTimer = 0;
-                this._blinkInterval = 3 + Math.random() * 5;
-                setTimeout(() => { this._isBlinking = false; }, 150);
-            }
-            const blinkScale = this._isBlinking ? 
-                (Math.sin(this._blinkTimer * 25) > 0 ? 0.1 : 1) : 1;
-            if (this.eyeLeft) this.eyeLeft.scale.y = blinkScale;
-            if (this.eyeRight) this.eyeRight.scale.y = blinkScale;
-
-            // Хвост
-            if (this.tailGroup) {
-                this._tailWave += dt * 3;
-                this.tailGroup.rotation.z = Math.sin(this._tailWave) * 0.15;
-                this.tailGroup.rotation.x = Math.cos(this._tailWave * 0.7) * 0.1;
-            }
-
-            // Уши
-            this._earTwitchTimer += dt;
-            if (this._earTwitchTimer > 6) {
-                this._earTwitchTimer = 0;
-                if (this.earLeft && this.earRight) {
-                    const origL = this.earLeft.rotation.z;
-                    const origR = this.earRight.rotation.z;
-                    const twitch = () => {
-                        if (this.isDisposed) return;
-                        const t = (Date.now() % 300) / 300;
-                        this.earLeft.rotation.z = origL + Math.sin(t * Math.PI * 4) * 0.15;
-                        this.earRight.rotation.z = origR - Math.sin(t * Math.PI * 4) * 0.15;
-                        if (t < 1) requestAnimationFrame(twitch);
-                        else {
-                            this.earLeft.rotation.z = origL;
-                            this.earRight.rotation.z = origR;
-                        }
-                    };
-                    twitch();
-                }
-            }
-
-            // Частицы
-            if (this.particles.length > 0) {
-                this.particles.forEach(p => {
-                    p.position.x = p.userData.baseX + Math.sin(this.animTime * p.userData.speed + p.userData.phase) * p.userData.amplitude;
-                    p.position.y = p.userData.baseY + Math.cos(this.animTime * p.userData.speed * 0.7 + p.userData.phase) * p.userData.amplitude;
-                });
-            }
-
-            // Временные искры
-            if (this._tempSparks && this._tempSparks.length > 0) {
-                this._tempSparks = this._tempSparks.filter(spark => {
-                    spark.userData.life -= spark.userData.decay;
-                    spark.material.opacity = spark.userData.life;
-                    spark.material.transparent = true;
-                    spark.position.add(spark.userData.velocity);
-                    if (spark.userData.life <= 0) {
-                        this.scene.remove(spark);
-                        spark.geometry.dispose();
-                        spark.material.dispose();
-                        return false;
-                    }
-                    return true;
-                });
-            }
-
+            this.updateAnimations(dt);
             this.renderer.render(this.scene, this.camera);
         };
-        requestAnimationFrame(animate);
+        animate();
     }
 
-    // ─── Применение сохранённого состояния ─────────────────────────
+    updateAnimations(dt) {
+        if (!this.catGroup) return;
+
+        // ── Плавный поворот к цели (lerp) ──
+        const lerpSpeed = 8;
+        this._currentRotX += (this._targetRotX - this._currentRotX) * Math.min(lerpSpeed * dt, 1);
+        this._currentRotY += (this._targetRotY - this._currentRotY) * Math.min(lerpSpeed * dt, 1);
+        this.catGroup.rotation.x = this._currentRotX + this._spinAngle * 0;
+        this.catGroup.rotation.y = this._currentRotY + this._spinAngle;
+
+        // ── Дыхание ──
+        const breathe = 1 + Math.sin(this.animTime * 2.1) * 0.02;
+        if (this.bodyMesh) {
+            this.bodyMesh.scale.set(breathe, 1.3 * breathe, breathe);
+        }
+        if (this.headMesh) {
+            this.headMesh.scale.set(breathe, 0.85 * breathe, breathe);
+        }
+
+        // ── Прыжок при pet ──
+        if (this._jumpOffset > 0.001) {
+            const jumpY = Math.sin(this._jumpOffset * 10) * 0.2;
+            this.catGroup.position.y = jumpY;
+            this._jumpOffset *= 0.85;
+            if (this._jumpOffset < 0.001) {
+                this.catGroup.position.y = 0;
+                this._jumpOffset = 0;
+            }
+        }
+
+        // ── Моргание ──
+        this._blinkTimer += dt;
+        if (this._currentEmotion !== 'sleepy') {
+            if (this._blinkTimer > this._blinkInterval) {
+                this._blinkTimer = 0;
+                this._blinkInterval = 3 + Math.random() * 5;
+                this._isBlinking = true;
+            }
+            if (this._isBlinking) {
+                this._blinkTimer += dt;
+                const blinkProgress = Math.min(this._blinkTimer / 0.15, 1);
+                const blinkVal = blinkProgress < 0.5 ? blinkProgress * 2 : (1 - blinkProgress) * 2;
+                const eyelidScale = 0.01 + blinkVal * 0.99;
+                if (this.eyelidL) this.eyelidL.scale.y = eyelidScale;
+                if (this.eyelidR) this.eyelidR.scale.y = eyelidScale;
+                if (blinkProgress >= 1) {
+                    this._isBlinking = false;
+                    this._blinkTimer = 0;
+                    if (this.eyelidL) this.eyelidL.scale.y = 0.01;
+                    if (this.eyelidR) this.eyelidR.scale.y = 0.01;
+                }
+            }
+        } else {
+            // Sleepy: веки полузакрыты
+            if (this.eyelidL) this.eyelidL.scale.y += (0.6 - this.eyelidL.scale.y) * 0.1;
+            if (this.eyelidR) this.eyelidR.scale.y += (0.6 - this.eyelidR.scale.y) * 0.1;
+        }
+
+        // ── Хвост ──
+        if (this.tailGroup) {
+            this.tailGroup.rotation.z = Math.sin(this.animTime * 3) * 0.15;
+            this.tailGroup.rotation.y = Math.cos(this.animTime * 2.3) * 0.1;
+        }
+
+        // ── Уши: подёргивание каждые 6s ──
+        this._earTwitchTimer += dt;
+        if (this._earTwitchTimer > 6) {
+            this._earTwitchTimer = 0;
+            const twitchAmount = 0.15;
+            const baseLeft = this._currentEmotion === 'sad' ? 0.6 : this._currentEmotion === 'sleepy' ? 0.4 : 0.3;
+            const baseRight = this._currentEmotion === 'sad' ? -0.6 : this._currentEmotion === 'sleepy' ? -0.4 : -0.3;
+            if (this.earLeft) this.earLeft.rotation.z = baseLeft + twitchAmount;
+            if (this.earRight) this.earRight.rotation.z = baseRight - twitchAmount;
+            if (this.earInnerL) this.earInnerL.rotation.z = baseLeft + twitchAmount;
+            if (this.earInnerR) this.earInnerR.rotation.z = baseRight - twitchAmount;
+            setTimeout(() => {
+                if (this.earLeft && !this.isDisposed) {
+                    this.earLeft.rotation.z = baseLeft;
+                    this.earRight.rotation.z = baseRight;
+                    this.earInnerL.rotation.z = baseLeft;
+                    this.earInnerR.rotation.z = baseRight;
+                }
+            }, 150);
+        }
+
+        // ── Рот (morph) ──
+        // Speaking
+        if (this._isSpeaking) {
+            this._speakTimer += dt;
+            const cycle = Math.sin(this._speakTimer * 25);
+            this._targetMouthOpen = 0.4 * Math.max(0, cycle);
+            if (this._speakTimer > 1.0) {
+                this._isSpeaking = false;
+                this._speakTimer = 0;
+                this._targetMouthOpen = 0;
+            }
+        }
+        // Eating
+        if (this._eatingProgress > 0 && this._eatingProgress < 1) {
+            this._eatingProgress += dt * 2;
+            if (this._eatingProgress >= 1) this._eatingProgress = 1;
+            const eatCycle = this._eatingProgress < 0.5
+                ? this._eatingProgress * 2
+                : (1 - this._eatingProgress) * 2;
+            this._targetMouthOpen = 0.7 * eatCycle;
+            if (this._eatingProgress >= 1) this._targetMouthOpen = 0;
+        }
+
+        this._mouthOpenAmount += (this._targetMouthOpen - this._mouthOpenAmount) * 0.2;
+
+        // Применяем открытие рта
+        if (this.mouthParts[0] && this.mouthParts[1]) {
+            const openY = -0.35 - this._mouthOpenAmount * 0.15;
+            this.mouthParts[0].position.y += (openY - this.mouthParts[0].position.y) * 0.3;
+            this.mouthParts[1].position.y += (openY - this.mouthParts[1].position.y) * 0.3;
+            this.mouthParts[0].position.z = 1.1 + this._mouthOpenAmount * 0.05;
+            this.mouthParts[1].position.z = 1.1 + this._mouthOpenAmount * 0.05;
+        }
+        // Язык
+        if (this.tongue && this.tongue.material) {
+            const targetOpacity = this._mouthOpenAmount > 0.1 ? 1 : 0;
+            this.tongue.material.opacity += (targetOpacity - this.tongue.material.opacity) * 0.2;
+            this.tongue.position.y += ((-0.4 + this._mouthOpenAmount * 0.1) - this.tongue.position.y) * 0.3;
+        }
+
+        // ── Частицы ──
+        this.particles.forEach(star => {
+            const ud = star.userData;
+            star.position.x = ud.baseX + Math.sin(this.animTime * ud.speed + ud.phase) * ud.amplitude;
+            star.position.y = ud.baseY + Math.cos(this.animTime * ud.speed * 1.3 + ud.phase) * ud.amplitude;
+            star.position.z = ud.baseZ + Math.sin(this.animTime * ud.speed * 0.7 + ud.phase) * ud.amplitude;
+        });
+
+        // ── Fur shells: лёгкое смещение при движении ──
+        const allShells = [...(this.headShells || []), ...(this.bodyShells || [])];
+        allShells.forEach((shell, i) => {
+            if (shell.userData && shell.userData.baseScale) {
+                const offset = (Math.sin(this.animTime * 4 + i) * 0.01);
+                shell.scale.setScalar(shell.userData.baseScale + offset);
+                shell.position.x = Math.cos(this.animTime * 3 + i) * 0.01;
+                shell.position.y = Math.sin(this.animTime * 2.5 + i) * 0.01;
+            }
+        });
+
+        // ── Тень следует за котом ──
+        if (this.shadowPlane) {
+            this.shadowPlane.position.y = -2.4 + this.catGroup.position.y;
+        }
+    }
+
+    // ─── ПРИМЕНЕНИЕ АКТИВНЫХ ПРЕДМЕТОВ ──────────────────────
 
     applyActiveItems() {
-        if (!this.state.activeItems) return;
-        const { hat, glasses, skin, accessory } = this.state.activeItems;
-        if (hat) this.setHat(hat);
-        if (glasses) this.setGlasses(glasses);
-        if (skin) this.setSkin(SKIN_TYPES[skin]?.hex || SKIN_TYPES.orange.hex);
-        if (accessory) this.setAccessory(accessory);
+        if (!this.state || !this.state.catCustom) return;
+        const cc = this.state.catCustom;
+        if (cc.skin) this.setSkin(cc.skin);
+        if (cc.hat) this.setHat(cc.hat);
+        if (cc.glasses) this.setGlasses(cc.glasses);
+        if (cc.accessory) this.setAccessory(cc.accessory);
+        if (cc.emotion) this.setEmotion(cc.emotion);
     }
 
-    // ─── Очистка ──────────────────────────────────────────────────
+    // ─── ОЧИСТКА ─────────────────────────────────────────────
 
     dispose() {
         this.isDisposed = true;
         if (this.renderer) {
             this.renderer.dispose();
-            this.renderer.domElement.remove();
+            if (this.renderer.domElement && this.renderer.domElement.parentNode) {
+                this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
+            }
         }
-        // Очистка сцены
         if (this.scene) {
             this.scene.traverse(child => {
                 if (child.geometry) child.geometry.dispose();
@@ -6293,10 +6557,14 @@ class Cat3D {
                 }
             });
         }
+        if (this.furTexture) this.furTexture.dispose();
+        this.catGroup = null;
+        this.scene = null;
+        this.renderer = null;
     }
 }
 
-// ─── Экспорты данных магазина ────────────────────────────────────
+// Экспорт констант
 
 /* === js/components/lesson.js === */
 // js/components/lesson.js

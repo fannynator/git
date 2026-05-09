@@ -254,7 +254,8 @@ export function generateAddLesson() {
         const [bMin2, bMax2] = adaptiveRange(10, 30, DIFF_STEP);
         const a2 = rnd(bMin2, bMax2), a3 = rnd(1, a2 - 1);
         const [bMin3, bMax3] = adaptiveRange(10, 50, DIFF_STEP);
-        const a4 = rnd(bMin3, bMax3), a5 = rnd(pMin, pMax), a6 = rnd(5, 15);
+        const [pMinB, pMaxB] = adaptiveRange(5, 20, DIFF_STEP);
+        const a4 = rnd(bMin3, bMax3), a5 = rnd(pMinB, pMaxB), a6 = rnd(5, 15);
         t.push(bossT('⭐', 'Босс', 'badge-boss', 'Реши несколько задач на сложение:', [
             { label: `${a1} + ${b1}`, correctAns: add(a1, b1), hint: `Складываем: ${a1} + ${b1} = ${add(a1, b1)}` },
             { label: `${a2} + ${a3}`, correctAns: add(a2, a3), hint: `${a2} + ${a3} = ${add(a2, a3)}` },
