@@ -1,4 +1,4 @@
-import { $ } from '../utils.js';
+import { $, safeGetItem, safeSetItem } from '../utils.js';
 import { TUTORIAL_KEY } from '../config.js';
 
 const steps = [
@@ -9,7 +9,7 @@ const steps = [
 ];
 
 export function startTutorial() {
-    if (localStorage.getItem(TUTORIAL_KEY)) return;
+    if (safeGetItem(TUTORIAL_KEY)) return;
     
     const overlay = $('#tutorialOverlay');
     let step = 0;
@@ -24,7 +24,7 @@ export function startTutorial() {
         overlay.classList.add('active');
     };
     
-    const close = () => { overlay.classList.remove('active'); localStorage.setItem(TUTORIAL_KEY, '1'); };
+    const close = () => { overlay.classList.remove('active'); safeSetItem(TUTORIAL_KEY, '1'); };
     
     $('#tutNext').addEventListener('click', () => { step++; if (step >= steps.length) close(); else render(); });
     $('#tutSkip').addEventListener('click', close);

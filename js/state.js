@@ -3,6 +3,7 @@ import {
     SUBJECTS, CLASSES, GEMS, TRAP, DEFAULT_THEME, THEMES, getTheme, countCompletedLessons,
     getSkillsForClass, getAllSkillsForSubject
 } from './config.js';
+import { safeGetItem, safeSetItem, safeRemoveItem } from './utils.js';
 
 function deepClone(obj) {
     return JSON.parse(JSON.stringify(obj));
@@ -91,11 +92,11 @@ export const saveState = () => {
         ownedItems: state.ownedItems,
         activeItems: state.activeItems
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    safeSetItem(STORAGE_KEY, JSON.stringify(data));
 };
 
 export const loadState = () => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = safeGetItem(STORAGE_KEY);
     if (!saved) return;
     try {
         const data = JSON.parse(saved);
@@ -212,7 +213,7 @@ export const resetAllProgress = () => {
     state.theme = DEFAULT_THEME;
     state.ownedItems = { hats: ['none'], glasses: ['none'], skins: ['orange'], accessories: ['none'] };
     state.activeItems = { hat: 'none', glasses: 'none', skin: 'orange', accessory: 'none' };
-    localStorage.removeItem(STORAGE_KEY);
+    safeRemoveItem(STORAGE_KEY);
     applyTheme(DEFAULT_THEME);
 };
 

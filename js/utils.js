@@ -1,5 +1,19 @@
 import { state, findSkillById } from './state.js';
 
+// ─── Безопасные обёртки localStorage (защита от приватного режима / переполнения квоты) ───
+export const safeGetItem = (key, fallback = null) => {
+    try { const v = localStorage.getItem(key); return v !== null ? v : fallback; }
+    catch (e) { return fallback; }
+};
+export const safeSetItem = (key, value) => {
+    try { localStorage.setItem(key, value); return true; }
+    catch (e) { return false; }
+};
+export const safeRemoveItem = (key) => {
+    try { localStorage.removeItem(key); return true; }
+    catch (e) { return false; }
+};
+
 export const $ = (selector, parent = document) => parent.querySelector(selector);
 export const $$ = (selector, parent = document) => parent.querySelectorAll(selector);
 
@@ -74,18 +88,16 @@ export function spawnXP(amount, x, y, parent = document.body) {
     setTimeout(() => el.remove(), 1300);
 }
 
-/** Lottie-анимация */
-export function playLottie(container, animationUrl, options = {}) {
-    if (!window.lottie || !container) return;
-    const anim = window.lottie.loadAnimation({
-        container,
-        renderer: 'svg',
-        loop: options.loop ?? false,
-        autoplay: true,
-        path: animationUrl
-    });
-    if (options.onComplete) anim.addEventListener('complete', options.onComplete);
-    return anim;
+/** CSS-анимация достижения (замена Lottie) */
+export function playAchievementAnim(container) {
+    if (!container) return;
+    container.innerHTML = '<div class="css-medal">🏅</div>';
+    const medal = container.querySelector('.css-medal');
+    if (medal) {
+        medal.addEventListener('animationend', () => {
+            if (container.parentNode) container.remove();
+        }, { once: true });
+    }
 }
 
 export const makeWrongs = (correct, count = 3) => {

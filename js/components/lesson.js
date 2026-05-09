@@ -1,6 +1,6 @@
 // js/components/lesson.js
 
-import { $, $$, showToast, spawnXP, playLottie } from '../utils.js';
+import { $, $$, showToast, spawnXP, playAchievementAnim, safeGetItem, safeSetItem, safeRemoveItem } from '../utils.js';
 import { state, saveState, getCurrentSkills, unlockAchievement, checkAchievements } from '../state.js';
 import { GEMS, SKILL, CAT_SPEECH, STORAGE_KEY } from '../config.js';
 import { generateMathLesson } from '../generators/math.js';
@@ -29,11 +29,11 @@ function saveLessonProgress() {
         hintsRemaining: state.lessonHintsRemaining,
         hintUsed: state.lessonHintUsed
     };
-    localStorage.setItem(LESSON_STORAGE_KEY, JSON.stringify(progress));
+    safeSetItem(LESSON_STORAGE_KEY, JSON.stringify(progress));
 }
 
 function loadLessonProgress() {
-    const saved = localStorage.getItem(LESSON_STORAGE_KEY);
+    const saved = safeGetItem(LESSON_STORAGE_KEY);
     if (!saved) return false;
     try {
         const progress = JSON.parse(saved);
@@ -48,7 +48,7 @@ function loadLessonProgress() {
     } catch (e) { return false; }
 }
 
-function clearLessonProgress() { localStorage.removeItem(LESSON_STORAGE_KEY); }
+function clearLessonProgress() { safeRemoveItem(LESSON_STORAGE_KEY); }
 
 function initStepHistory() {
     const total = state.lessonTasks.length;
@@ -116,7 +116,7 @@ function useHint() {
 }
 
 export function startLesson(skillId) {
-    const saved = localStorage.getItem(LESSON_STORAGE_KEY);
+    const saved = safeGetItem(LESSON_STORAGE_KEY);
     if (saved) {
         try {
             const progress = JSON.parse(saved);
@@ -184,9 +184,6 @@ export function startLesson(skillId) {
     saveLessonProgress();
     renderLessonStep();
 }
-
-// Экспортируем useHint глобально
-window.useLessonHint = useHint;
 
 // ─── Индикатор уровня сложности ───────────────────────────
 function updateDifficultyBadge() {
@@ -300,11 +297,11 @@ function finishLesson() {
     
     // Lottie галочка при идеальном прохождении
     if (w === 0) {
-        const lottieWrap = document.createElement('div');
-        lottieWrap.className = 'lottie-container lottie-fade';
-        document.body.appendChild(lottieWrap);
-        playLottie(lottieWrap, 'https://assets10.lottiefiles.com/packages/lf20_jbrw3hcz.json');
-        setTimeout(() => lottieWrap.remove(), 2500);
+        const medalWrap = document.createElement('div');
+        medalWrap.className = 'lottie-container lottie-fade';
+        document.body.appendChild(medalWrap);
+        playAchievementAnim(medalWrap);
+        setTimeout(() => medalWrap.remove(), 2500);
     }
     
     unlockAchievement('student', (n, d) => showAchievementToast(n, d));
@@ -340,8 +337,12 @@ function finishLesson() {
     renderSkillTree();
 }
 
+// ─── Регистрируем обработчик кнопки подсказки (замена window.useLessonHint) ───
+const _hintBtn = document.getElementById('lessonHintBtn');
+if (_hintBtn) _hintBtn.addEventListener('click', useHint);
+
 export function checkSavedLesson() {
-    const saved = localStorage.getItem(LESSON_STORAGE_KEY);
+    const saved = safeGetItem(LESSON_STORAGE_KEY);
     if (!saved) return false;
     try {
         const progress = JSON.parse(saved);

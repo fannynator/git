@@ -1,6 +1,8 @@
 // js/components/kitty3D.js
 // 3D Кот для профиля — CSS 3D Transforms, без Three.js
 
+import { safeGetItem, safeSetItem } from '../utils.js';
+
 const HATS = ['hat-none', 'hat-crown', 'hat-cap', 'hat-wizard'];
 const GLASSES = ['glasses-none', 'glasses-round', 'glasses-cool'];
 const FUR_COLORS = ['#F59E0B', '#F97316', '#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#6366F1', '#EAB308'];
@@ -243,25 +245,23 @@ function cycleColor(cat, btn) {
 }
 
 function saveKittyState() {
-    try {
-        localStorage.setItem('kitty3D_state', JSON.stringify({
-            hatIdx: kittyState.hatIdx,
-            glassesIdx: kittyState.glassesIdx,
-            colorIdx: kittyState.colorIdx
-        }));
-    } catch (e) { /* игнор */ }
+    safeSetItem('kitty3D_state', JSON.stringify({
+        hatIdx: kittyState.hatIdx,
+        glassesIdx: kittyState.glassesIdx,
+        colorIdx: kittyState.colorIdx
+    }));
 }
 
 function loadKittyState(cat) {
-    try {
-        const raw = localStorage.getItem('kitty3D_state');
-        if (raw) {
+    const raw = safeGetItem('kitty3D_state');
+    if (raw) {
+        try {
             const saved = JSON.parse(raw);
             if (typeof saved.hatIdx === 'number') kittyState.hatIdx = saved.hatIdx;
             if (typeof saved.glassesIdx === 'number') kittyState.glassesIdx = saved.glassesIdx;
             if (typeof saved.colorIdx === 'number') kittyState.colorIdx = saved.colorIdx;
-        }
-    } catch (e) { /* игнор */ }
+        } catch (e) { /* игнор */ }
+    }
 
     // Применяем загруженные классы
     const hatCls = HATS[kittyState.hatIdx];

@@ -104,11 +104,6 @@ body.theme-dark .cat-stage.rus-stage, body.theme-space .cat-stage.rus-stage { ba
 .cat-emoji:active { transform:scale(0.9)!important; }
 .cat-emoji.petted { animation:purr 0.6s ease; }
 @keyframes purr { 0%{transform:translateX(0)} 25%{transform:translateX(-5px) rotate(-3deg)} 50%{transform:translateX(5px) rotate(3deg)} 75%{transform:translateX(-3px)} 100%{transform:translateX(0)} }
-.cat-emoji { width:80px; height:80px; font-size:50px; cursor:pointer; transition:transform 0.1s ease; line-height:1; position:relative; display:flex; align-items:center; justify-content:center; animation:catBreathe 3s ease-in-out infinite; }
-@keyframes catBreathe { 0%,100%{transform:scale(1) translateY(0)} 50%{transform:scale(1.08) translateY(-3px)} }
-.cat-emoji:active { transform:scale(0.9)!important; }
-.cat-emoji.petted { animation:purr 0.6s ease; }
-@keyframes purr { 0%{transform:translateX(0)} 25%{transform:translateX(-5px) rotate(-3deg)} 50%{transform:translateX(5px) rotate(3deg)} 75%{transform:translateX(-3px)} 100%{transform:translateX(0)} }
 .hearts-particle { position:absolute; font-size:16px; pointer-events:none; animation:floatUp 1s ease forwards; opacity:0; }
 
 /* ══════════ ТЕМАТИЧЕСКИЕ АКСЕССУАРЫ КОТА ══════════ */
@@ -155,6 +150,23 @@ body.theme-underwater .profile-avatar::after {
 .lottie-small { width:120px; height:120px; }
 .lottie-fade { animation:lottieFade 2.5s ease forwards; }
 @keyframes lottieFade { 0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(0.8)} }
+
+/* CSS-медаль достижения (замена Lottie) */
+.css-medal {
+    font-size: 80px;
+    text-align: center;
+    line-height: 200px;
+    animation: medalPop 2.5s ease forwards;
+    filter: drop-shadow(0 0 20px rgba(255,215,0,0.8));
+}
+@keyframes medalPop {
+    0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+    20%  { transform: scale(1.3) rotate(10deg); opacity: 1; }
+    40%  { transform: scale(0.9) rotate(-5deg); }
+    60%  { transform: scale(1.05) rotate(3deg); }
+    80%  { transform: scale(1) rotate(0deg); opacity: 1; }
+    100% { transform: scale(0.5) rotate(0deg); opacity: 0; }
+}
 @keyframes floatUp { 0%{transform:translateY(0) scale(1);opacity:1} 100%{transform:translateY(-50px) scale(1.8);opacity:0} }
 
 /* ══════════ СЕЛЕКТОР КЛАССОВ ══════════ */
@@ -1363,12 +1375,13 @@ body.theme-space .whisker {
 /* ══════════ 3D-КОТ (THREE.JS) В ПРОФИЛЕ ══════════ */
 .cat3d-container {
     width: 100%;
-    height: 220px;
+    height: auto;
+    min-height: 260px;
     margin: 0 auto 8px;
     cursor: grab;
     border-radius: 16px;
     overflow: hidden;
-    background: transparent;
+    background: transparent !important;
     position: relative;
 }
 .cat3d-container:active {
@@ -1376,6 +1389,8 @@ body.theme-space .whisker {
 }
 .cat3d-container canvas {
     display: block;
+    width: 100% !important;
+    height: 100% !important;
 }
 
 /* ══════════ МАГАЗИН ══════════ */
@@ -1578,5 +1593,25 @@ body.theme-dark .reset-progress-btn:hover,
 body.theme-space .reset-progress-btn:hover {
     background: rgba(239,68,68,0.2);
     border-color: rgba(239,68,68,0.5);
+}
+
+/* ══════════ prefers-reduced-motion ══════════ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+    .cat-body { animation: none !important; }
+    .hearts-particle { display: none !important; }
+    .xp-particle { animation: none !important; }
+    .header-leaf { animation: none !important; }
+    .kitty-3d-cat { transition: none !important; }
+    .cat-stage.parallax-active { transform: none !important; }
+    .lottie-container { display: none !important; }
+    .streak-fire { animation: none !important; }
+    .trap-egg { animation: none !important; }
+    .pulse { animation: none !important; }
+    .confetti-piece { animation: none !important; display: none !important; }
 }
 

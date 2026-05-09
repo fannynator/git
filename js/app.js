@@ -1,6 +1,6 @@
 // js/app.js
 
-import { $, $$, showToast, spawnXP, playLottie } from './utils.js';
+import { $, $$, showToast, spawnXP, playAchievementAnim, safeGetItem, safeSetItem } from './utils.js';
 import { state, loadState, saveState, unlockAchievement, checkAchievements, applyTheme, checkThemeUnlocks } from './state.js';
 import { SUBJECTS, CAT_SPEECH, SUBJECT_EMOJI, getTheme } from './config.js';
 import { renderSkillTree, switchClass } from './components/skillTree.js';
@@ -44,12 +44,11 @@ export function showAchievementToast(name, desc) {
     text.textContent = name + ' — ' + desc;
     toast.classList.add('show');
     
-    // Lottie медаль
-    const lottieWrap = document.createElement('div');
-    lottieWrap.className = 'lottie-container lottie-small lottie-fade';
-    document.body.appendChild(lottieWrap);
-    playLottie(lottieWrap, 'https://assets2.lottiefiles.com/packages/lf20_touohxv0.json');
-    setTimeout(() => lottieWrap.remove(), 2500);
+    // CSS-медаль достижения
+    const medalWrap = document.createElement('div');
+    medalWrap.className = 'lottie-container lottie-small lottie-fade';
+    document.body.appendChild(medalWrap);
+    playAchievementAnim(medalWrap);
     
     setTimeout(() => toast.classList.remove('show'), 3500);
 }
@@ -183,7 +182,7 @@ function bindEvents() {
 
 function updateDailyStreak() {
     const today = new Date().toDateString();
-    const lastVisit = localStorage.getItem('kot_ucheniy_last_visit');
+    const lastVisit = safeGetItem('kot_ucheniy_last_visit');
     
     if (!lastVisit) {
         // Первый визит
@@ -204,7 +203,7 @@ function updateDailyStreak() {
         }
     }
     
-    localStorage.setItem('kot_ucheniy_last_visit', today);
+    safeSetItem('kot_ucheniy_last_visit', today);
     saveState();
     updateStats();
     
