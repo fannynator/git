@@ -561,7 +561,7 @@ export class Cat3D {
         this.bellyMesh = bellyMesh;
 
         // ── ЛАПЫ ──
-        const pawGeo = new THREE.CapsuleGeometry(0.15, 0.5, 8, 8);
+        const pawGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.5, 8);
         const pawMat = new THREE.MeshToonMaterial({ color: furColor });
 
         // Передние
