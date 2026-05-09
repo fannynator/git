@@ -5392,18 +5392,12 @@ class Cat3D {
         this._eyeBones = [];
         this._blinkProgress = 0;
 
-        // Взаимодействие
-        this._mouseX = 0;
-        this._mouseY = 0;
-        this._targetRotX = 0;
-        this._targetRotY = 0;
-        this._currentRotX = 0;
-        this._currentRotY = 0;
-        this._isDragging = false;
-        this._dragStartX = 0;
-        this._dragStartY = 0;
-        this._dragStartRotX = 0;
-        this._dragStartRotY = 0;
+        // Слежение за курсором (как в Мой Том)
+        this._cursorX = 0;
+        this._cursorY = 0;
+        this._cursorActive = false;
+        this._leanX = 0;
+        this._leanY = 0;
 
         // Кастомизация
         this._currentHat = 'none';
@@ -5465,7 +5459,7 @@ class Cat3D {
         this.container.appendChild(this.renderer.domElement);
         this.renderer.domElement.style.width = '100%';
         this.renderer.domElement.style.height = '100%';
-        this.renderer.domElement.style.cursor = 'grab';
+        this.renderer.domElement.style.cursor = 'pointer';
 
         // Группы
         this._hatGroup = new THREE.Group();
@@ -6034,71 +6028,42 @@ class Cat3D {
 
     _setupInteraction() {
         const canvas = this.renderer.domElement;
+        canvas.style.cursor = 'pointer';
 
-        // Мышь — вращение
+        // Курсор/палец — кот следит лёгким наклоном головы
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
-            const mx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            const my = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-            if (this._isDragging) {
-                this._targetRotX = this._dragStartRotX + (my - this._dragStartY) * 0.8;
-                this._targetRotY = this._dragStartRotY + (mx - this._dragStartX) * 1.2;
-            }
-            // Без драга — ничего не делаем, модель остаётся на месте
-        });
-
-        canvas.addEventListener('mousedown', (e) => {
-            this._isDragging = true;
-            canvas.style.cursor = 'grabbing';
-            const rect = canvas.getBoundingClientRect();
-            this._dragStartX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            this._dragStartY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-            this._dragStartRotX = this._currentRotX;
-            this._dragStartRotY = this._currentRotY;
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            this._isDragging = false;
-            canvas.style.cursor = 'grab';
+            this._cursorX = ((e.clientX - rect.left) / rect.width) * 2 - 1;  // -1..1
+            this._cursorY = -((e.clientY - rect.top) / rect.height) * 2 + 1; // 1 вверху
+            this._cursorActive = true;
         });
 
         canvas.addEventListener('mouseleave', () => {
-            this._isDragging = false;
-            canvas.style.cursor = 'grab';
+            this._cursorActive = false;
         });
 
-        // Клик — прыжок
+        // Клик/тап — кот подпрыгивает
         canvas.addEventListener('click', () => {
-            if (!this._isDragging) {
-                this._jump();
-            }
+            this._jump();
         });
 
-        // Touch
-        canvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                this._isDragging = true;
-                const rect = canvas.getBoundingClientRect();
-                this._dragStartX = ((e.touches[0].clientX - rect.left) / rect.width) * 2 - 1;
-                this._dragStartY = -((e.touches[0].clientY - rect.top) / rect.height) * 2 + 1;
-                this._dragStartRotX = this._currentRotX;
-                this._dragStartRotY = this._currentRotY;
-            }
-        }, { passive: true });
-
+        // Touch: слежение за пальцем
         canvas.addEventListener('touchmove', (e) => {
-            if (this._isDragging && e.touches.length === 1) {
+            if (e.touches.length === 1) {
                 const rect = canvas.getBoundingClientRect();
-                const mx = ((e.touches[0].clientX - rect.left) / rect.width) * 2 - 1;
-                const my = -((e.touches[0].clientY - rect.top) / rect.height) * 2 + 1;
-                this._targetRotX = this._dragStartRotX + (my - this._dragStartY) * 0.8;
-                this._targetRotY = this._dragStartRotY + (mx - this._dragStartX) * 1.2;
+                this._cursorX = ((e.touches[0].clientX - rect.left) / rect.width) * 2 - 1;
+                this._cursorY = -((e.touches[0].clientY - rect.top) / rect.height) * 2 + 1;
+                this._cursorActive = true;
             }
         }, { passive: true });
 
         canvas.addEventListener('touchend', () => {
-            this._isDragging = false;
+            this._cursorActive = false;
+            this._jump();
+        });
+
+        canvas.addEventListener('touchcancel', () => {
+            this._cursorActive = false;
         });
 
         // Ресайз
@@ -6156,15 +6121,20 @@ class Cat3D {
     _updateAnimations(dt) {
         if (!this._catModel) return;
 
-        // ── Плавный поворот (lerp) ──
-        const lerpSpeed = 5;
-        this._currentRotX += (this._targetRotX - this._currentRotX) * Math.min(lerpSpeed * dt, 1);
-        this._currentRotY += (this._targetRotY - this._currentRotY) * Math.min(lerpSpeed * dt, 1);
-
-        // Полный обзор 360° — без ограничений
-
-        this._catModel.rotation.x = this._currentRotX;
-        this._catModel.rotation.y = this._currentRotY;
+        // ── Кот следит за курсором (наклон ~7°) ──
+        const leanSpeed = 4;
+        const maxLean = 0.12;
+        if (this._cursorActive) {
+            this._leanX += (this._cursorY * maxLean - this._leanX) * Math.min(leanSpeed * dt, 1);
+            this._leanY += (this._cursorX * maxLean - this._leanY) * Math.min(leanSpeed * dt, 1);
+        } else {
+            // Плавный возврат в нейтраль
+            this._leanX += (0 - this._leanX) * Math.min(leanSpeed * dt, 1);
+            this._leanY += (0 - this._leanY) * Math.min(leanSpeed * dt, 1);
+        }
+        // Кот всегда лицом к камере + лёгкий наклон к курсору
+        this._catModel.rotation.y = Math.PI + this._leanY;
+        this._catModel.rotation.x = this._leanX;
 
         // ── Дыхание (scale ±1% за 3 секунды) ──
         this._breathePhase += dt * (Math.PI * 2 / 3);
