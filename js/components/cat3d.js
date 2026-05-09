@@ -235,13 +235,21 @@ export class Cat3D {
         this.renderer.domElement.style.height = '100%';
         this.renderer.domElement.style.cursor = 'pointer';
 
-        // Группы
+        // Pivot-группа: всё вращается вокруг неё
+        this._pivotGroup = new THREE.Group();
+        this._pivotGroup.name = 'pivotGroup';
+        this.scene.add(this._pivotGroup);
+
+        // Группы кастомизации — внутри pivot
         this._hatGroup = new THREE.Group();
         this._hatGroup.name = 'hatGroup';
+        this._pivotGroup.add(this._hatGroup);
         this._glassesGroup = new THREE.Group();
         this._glassesGroup.name = 'glassesGroup';
+        this._pivotGroup.add(this._glassesGroup);
         this._accessoryGroup = new THREE.Group();
         this._accessoryGroup.name = 'accessoryGroup';
+        this._pivotGroup.add(this._accessoryGroup);
     }
 
     _setupLights() {
@@ -317,11 +325,14 @@ export class Cat3D {
                     // Фиксируем базовый scale для анимации дыхания
                     this._catModel.userData.baseScale = scale;
 
-                    // Центрируем модель
+                    // Центрируем модель внутри pivot (визуальный центр в 0,0,0)
                     const center = box.getCenter(new THREE.Vector3());
-                    this._catModel.position.set(-center.x * scale, -box.min.y * scale - 0.4, -center.z * scale);
-                    // Сохраняем базовую Y-позицию для анимации прыжка
-                    this._baseY = this._catModel.position.y;
+                    this._catModel.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+                    // Модель внутри pivot: позиция = смещение от её геометрического центра
+                    // Pivot задаёт мировую позицию (подъём над полом)
+                    this._pivotGroup.position.set(0, -box.min.y * scale - 0.4, 0);
+                    // Сохраняем базовую Y-позицию pivot для анимации прыжка
+                    this._baseY = this._pivotGroup.position.y;
 
                     // Ищем кости глаз для моргания
                     this._catModel.traverse((child) => {
@@ -334,14 +345,8 @@ export class Cat3D {
                     // Модель по умолчанию смотрит по +X, лицом к камере (Z+)
                     this._catModel.rotation.y = -Math.PI / 2;
 
-                    this.scene.add(this._catModel);
-
-                    // Добавляем группы поверх кота
-                    if (this._catModel) {
-                        this._catModel.add(this._hatGroup);
-                        this._catModel.add(this._glassesGroup);
-                        this._catModel.add(this._accessoryGroup);
-                    }
+                    // Модель внутри pivot
+                    this._pivotGroup.add(this._catModel);
 
                     resolve();
                 },
@@ -432,10 +437,9 @@ export class Cat3D {
         });
 
         this._catModel = group;
-        this.scene.add(group);
-        group.add(this._hatGroup);
-        group.add(this._glassesGroup);
-        group.add(this._accessoryGroup);
+        // Модель внутри pivot
+        this._pivotGroup.add(group);
+        // Группы кастомизации уже внутри pivot (см. _setupScene)
     }
 
     async _loadGraduateModel() {
@@ -931,13 +935,16 @@ export class Cat3D {
 
     _updateAnimations(dt) {
         if (!this._catModel) return;
+        const pivot = this._pivotGroup;
 
-        // ── Плавный поворот за мышью (drag) ──
+        // ── Плавный поворот за мышью (drag) — вращаем pivot вокруг своей оси ──
         const rotSpeed = 6;
         this._currentRotY += (this._targetRotY - this._currentRotY) * Math.min(rotSpeed * dt, 1);
         this._currentRotX += (this._targetRotX - this._currentRotX) * Math.min(rotSpeed * dt, 1);
-        this._catModel.rotation.y = -Math.PI / 2 + this._currentRotY;
-        this._catModel.rotation.x = this._currentRotX;
+        if (pivot) {
+            pivot.rotation.y = this._currentRotY;
+            pivot.rotation.x = this._currentRotX;
+        }
 
         // ── Дыхание (scale ±1% за 3 секунды) ──
         this._breathePhase += dt * (Math.PI * 2 / 3);
@@ -946,17 +953,20 @@ export class Cat3D {
             this._catModel.scale.setScalar(this._catModel.userData.baseScale * breatheScale);
         }
 
-        // ── Покачивание (±2° по X, 4 секунды) ──
+        // ── Покачивание (±2° по Z, 4 секунды) — на pivot ──
         this._swayPhase += dt * (Math.PI * 2 / 4);
         const swayAngle = Math.sin(this._swayPhase) * (2 * Math.PI / 180);
-        // Добавляем к текущей ротации (поверх вращения пользователем)
-        this._catModel.rotation.z = swayAngle;
+        if (pivot) {
+            pivot.rotation.z = swayAngle;
+        }
 
-        // ── Прыжок ──
-        if (this._jumpOffset > 0.001 || this._jumpOffset < -0.001) {
-            this._catModel.position.y = this._baseY + this._jumpOffset;
-        } else {
-            this._catModel.position.y = this._baseY;
+        // ── Прыжок — смещаем pivot по Y ──
+        if (pivot) {
+            if (Math.abs(this._jumpOffset) > 0.001) {
+                pivot.position.y = this._baseY + this._jumpOffset;
+            } else {
+                pivot.position.y = this._baseY;
+            }
         }
 
         // ── Моргание ──
@@ -1004,9 +1014,9 @@ export class Cat3D {
             });
         }
 
-        // ── Тень следует за котом ──
-        if (this._shadowPlane && this._catModel) {
-            this._shadowPlane.position.y = -1.5 + this._catModel.position.y;
+        // ── Тень следует за pivot'ом ──
+        if (this._shadowPlane && this._pivotGroup) {
+            this._shadowPlane.position.y = -1.5 + this._pivotGroup.position.y;
         }
     }
 
